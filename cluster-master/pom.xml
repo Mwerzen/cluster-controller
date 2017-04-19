@@ -3,12 +3,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.mikewerzen.servers.cluster-lifecycle</groupId>
-	<artifactId>cluster-master-lifecycle-controller</artifactId>
+	<groupId>com.mikewerzen.cluster.cluster-controller</groupId>
+	<artifactId>cluster-controller-master</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>cluster-master-lifecycle-controller</name>
+	<name>cluster-controller-master</name>
 	<description>Cluster Master</description>
 
 	<parent>
