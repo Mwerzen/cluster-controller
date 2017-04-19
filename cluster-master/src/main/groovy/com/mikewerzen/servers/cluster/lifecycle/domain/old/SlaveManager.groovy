@@ -1,8 +1,9 @@
-package com.mikewerzen.servers.cluster.lifecycle.domain
+package com.mikewerzen.servers.cluster.lifecycle.domain.old
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveMessenger
 import com.sun.corba.se.impl.io.ObjectStreamClass.CompareObjStrFieldsByName
 
 @Component

@@ -3,6 +3,7 @@ package com.mikewerzen.servers.cluster.lifecycle;
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+
 import com.mikewerzen.servers.cluster.lifecycle.domain.Application
 import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
 import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveManager

@@ -1,4 +1,4 @@
-package com.mikewerzen.servers.cluster.lifecycle.domain
+package com.mikewerzen.servers.cluster.lifecycle.domain.old
 
 class Application {
 
