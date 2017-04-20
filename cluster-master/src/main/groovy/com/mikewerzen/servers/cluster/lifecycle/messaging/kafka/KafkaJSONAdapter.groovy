@@ -6,8 +6,8 @@ import java.util.Map;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 
+import com.mikewerzen.servers.cluster.lifecycle.domain.StatusMessage
 import com.mikewerzen.servers.cluster.lifecycle.messaging.CommandMessage
-import com.mikewerzen.servers.cluster.lifecycle.messaging.StatusMessage
 
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;

@@ -2,10 +2,9 @@ package com.mikewerzen.servers.cluster.lifecycle.domain;
 
 public class DeploymentManager
 {
-
 	private Set<Deployment> deployments = new HashSet<Deployment>();
 
-	public boolean deployApplication(Deployment deployment, boolean keepExistingDeploymentsOfApplication)
+	public boolean addDeployment(Deployment deployment, boolean keepExistingDeploymentsOfApplication)
 	{
 		if (!keepExistingDeploymentsOfApplication)
 		{
@@ -26,7 +25,13 @@ public class DeploymentManager
 		}
 	}
 
-	public boolean isApplicationDeployed(Deployment deployment)
+	public boolean isApplicationDeployed(Deployment deployment, boolean anyVersion)
 	{
+		return deployments.find { dep -> anyVersion ? deployment.isSameApplication(dep) : deployment.isSameVersionOfApplication(dep)} != null;
+	}
+	
+	public boolean removeDeployment(Deployment deployment, boolean removeAllVersions)
+	{
+		deployments.removeIf { dep ->  removeAllVersions ? deployment.isSameApplication(deployment) : deployment.isSameVersionOfApplication(dep)};
 	}
 }

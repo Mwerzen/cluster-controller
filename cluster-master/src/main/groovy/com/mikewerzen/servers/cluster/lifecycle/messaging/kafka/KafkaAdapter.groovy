@@ -9,9 +9,9 @@ import com.mikewerzen.servers.cluster.lifecycle.MessagePoller
 import com.mikewerzen.servers.cluster.lifecycle.domain.Application
 import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
 import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveMessenger
+import com.mikewerzen.servers.cluster.lifecycle.domain.StatusMessage
 import com.mikewerzen.servers.cluster.lifecycle.messaging.CommandMessage
 import com.mikewerzen.servers.cluster.lifecycle.messaging.DateUtil
-import com.mikewerzen.servers.cluster.lifecycle.messaging.StatusMessage
 import com.mikewerzen.servers.cluster.lifecycle.domain.Command;
 
 @Component

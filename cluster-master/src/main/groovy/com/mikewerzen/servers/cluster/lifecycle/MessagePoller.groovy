@@ -1,6 +1,6 @@
 package com.mikewerzen.servers.cluster.lifecycle
 
-import com.mikewerzen.servers.cluster.lifecycle.messaging.StatusMessage
+import com.mikewerzen.servers.cluster.lifecycle.domain.StatusMessage
 
 interface MessagePoller {
 

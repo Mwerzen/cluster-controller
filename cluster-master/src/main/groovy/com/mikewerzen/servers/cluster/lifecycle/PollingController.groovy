@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component
 import com.mikewerzen.servers.cluster.lifecycle.domain.Application
 import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
 import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveManager
+import com.mikewerzen.servers.cluster.lifecycle.domain.StatusMessage
 import com.mikewerzen.servers.cluster.lifecycle.messaging.DateUtil
-import com.mikewerzen.servers.cluster.lifecycle.messaging.StatusMessage;
 
 @Component
 public class PollingController  {

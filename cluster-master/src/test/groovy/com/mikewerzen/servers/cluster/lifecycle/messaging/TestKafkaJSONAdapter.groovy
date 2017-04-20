@@ -6,6 +6,7 @@ import org.junit.Ignore
 import org.junit.Test
 
 import com.mikewerzen.servers.cluster.lifecycle.domain.Application
+import com.mikewerzen.servers.cluster.lifecycle.domain.StatusMessage
 import com.mikewerzen.servers.cluster.lifecycle.messaging.kafka.KafkaJSONAdapter
 
 class TestKafkaJSONAdapter {
