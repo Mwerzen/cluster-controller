@@ -75,4 +75,10 @@ class Deployment
 			return false;
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Deployment [applicationName=" + applicationName + ", applicationVersion=" + applicationVersion + "]";
+	}
 }

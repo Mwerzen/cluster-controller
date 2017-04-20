@@ -13,7 +13,7 @@ public class Slave
 
 	String slaveName;
 	double loadOnSlave;
-	Date lastCheckIn;
+	long lastCheckInMillis;
 	Set<Deployment> deploymentsRunning = new HashSet<Deployment>();
 
 	public Slave()
@@ -25,13 +25,13 @@ public class Slave
 		this.slaveName = slaveName;
 		this.loadOnSlave = loadOnSlave;
 		deploymentsRunning.addAll(deployments);
-		lastCheckIn = new Date();
+		lastCheckInMillis = System.currentTimeMillis();
 	}
 
 	public String refreshSlave(double load)
 	{
 		this.loadOnSlave = load;
-		lastCheckIn = new Date();
+		lastCheckInMillis = System.currentTimeMillis();
 	}
 
 	public boolean isRunningSameVersionOfDeployment(Deployment deployment)
@@ -45,36 +45,46 @@ public class Slave
 	}
 
 
-	public void addDeployment(Deployment deployment)
+	public Deployment addDeployment(Deployment deployment)
 	{
 		if (isRunningAnyVersionOfDeployment(deployment))
 		{
-			throw new ClusterIntegrityException("Slave: " + slave + " is already running a version of this deployment! Undeploy first.");
+			throw new ClusterIntegrityException("Slave: " + this + " is already running a version of this deployment! Undeploy first.");
 		}
 
 		deploymentsRunning.add(deployment);
 		eventRegistry.addDeploymentEvent(this, deployment);
+		return deployment;
 	}
 
-	public void removeDeployment(Deployment deployment)
+	public Deployment removeDeployment(Deployment deployment)
 	{
 		if(isRunningAnyVersionOfDeployment(deployment))
 		{
-			deploymentsRunning.removeIf {deployment.isSameApplication };
+			deploymentsRunning.removeIf {dep -> deployment.isSameApplication(dep) };
 			eventRegistry.addUndeploymentEvent(this, deployment);
+			return deployment;
 		}
+		return null;
 	}
 
-	public void reboot()
+	public Slave reboot()
 	{
 		deploymentsRunning.each{removeDeployment};
 		eventRegistry.addRebootEvent(this, null);
+		return this;
 	}
 
-	public void shutdown()
+	public Slave shutdown()
 	{
 		deploymentsRunning.each{removeDeployment};
 		eventRegistry.addShutdownEvent(this, null);
+		return this;
+	}
+
+	public boolean isSlaveDead()
+	{
+		return lastCheckInMillis < (System.currentTimeMillis() - (60 * 1000L));
 	}
 
 	@Override
@@ -102,5 +112,11 @@ public class Slave
 		else if (!slaveName.equals(other.slaveName))
 			return false;
 		return true;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Slave [slaveName=" + slaveName + ", deploymentsRunning=" + deploymentsRunning + "]";
 	}
 }

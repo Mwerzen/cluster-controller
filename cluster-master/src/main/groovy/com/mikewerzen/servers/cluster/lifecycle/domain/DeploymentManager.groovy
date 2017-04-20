@@ -8,7 +8,7 @@ public class DeploymentManager
 	{
 		if (!keepExistingDeploymentsOfApplication)
 		{
-			deployments.removeIf { dep -> deployment.isSameApplication(deployment) };
+			deployments.removeIf { dep -> deployment.isSameApplication(dep) };
 			deployments.add(deployment);
 		}
 		else
@@ -25,13 +25,23 @@ public class DeploymentManager
 		}
 	}
 
+	public Deployment findDeployment(String name)
+	{
+		return deployments.find { dep -> name.equals(dep.applicationName)};
+	}
+
+	public Deployment findDeployment(String name, String version)
+	{
+		return deployments.find { dep -> name.equals(dep.applicationName) && version.equals(dep.applicationVersion)};
+	}
+
 	public boolean isApplicationDeployed(Deployment deployment, boolean anyVersion)
 	{
 		return deployments.find { dep -> anyVersion ? deployment.isSameApplication(dep) : deployment.isSameVersionOfApplication(dep)} != null;
 	}
-	
+
 	public boolean removeDeployment(Deployment deployment, boolean removeAllVersions)
 	{
-		deployments.removeIf { dep ->  removeAllVersions ? deployment.isSameApplication(deployment) : deployment.isSameVersionOfApplication(dep)};
+		deployments.removeIf { dep ->  removeAllVersions ? deployment.isSameApplication(dep) : deployment.isSameVersionOfApplication(dep)};
 	}
 }

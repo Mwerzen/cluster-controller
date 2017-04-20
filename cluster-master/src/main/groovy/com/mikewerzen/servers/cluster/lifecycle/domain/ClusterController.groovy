@@ -9,8 +9,34 @@ public class ClusterController
 
 	SlaveManager slaveManager;
 
+	public Slave findSlave(String name)
+	{
+		return slaveManager.findSlaveForName(name);
+	}
 
-	public List deploy(Deployment deployment)
+	public Map<Deployment, List<Slave>> getDeploymentsToSlaves()
+	{
+		Map<Deployment, List<Slave>> depsToSlaves = new HashMap<Deployment, List<Slave>>();
+		deploymentManager.deployments.each {deployment -> depsToSlaves.put(deployment, slaveManager.slavesInCluster.findAll { slave -> slave.isRunningSameVersionOfDeployment(deployment)})};
+		return depsToSlaves;
+	}
+
+	public Map<Slave, List<Deployment>> getSlavesToDeployments()
+	{
+		Map<Slave, List<Deployment>> slavesToDeps = new HashMap<Deployment, List<Slave>>();
+		slaveManager.slavesInCluster.each {slave -> slavesToDeps.put(slave, slave.deploymentsRunning)};
+		return slavesToDeps;
+	}
+
+
+	public Deployment findDeployment(String name, String version)
+	{
+		if (version)
+			return deploymentManager.findDeployment(name, version);
+		return deploymentManager.findDeployment(name);
+	}
+
+	public List<Slave> deploy(Deployment deployment)
 	{
 		def slavesDeployedTo = new ArrayList<Deployment>();
 		try
@@ -24,5 +50,11 @@ public class ClusterController
 		}
 
 		return slavesDeployedTo;
+	}
+
+	public void undeploy(Deployment deployment, boolean allVersions)
+	{
+		slaveManager.undeployFromCluster(deployment, allVersions);
+		deploymentManager.removeDeployment(deployment, allVersions);
 	}
 }
