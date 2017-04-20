@@ -6,7 +6,16 @@ public class SlaveManager
 {
 	private Set slavesInCluster = new HashSet<Slave>();
 
+	public void registerSlave(Slave slave)
+	{
+		slavesInCluster.add(slave);
+	}
 
+	public int getNumberOfSlavesRunningSameVersionOfDeployment(Deployment deployment)
+	{
+		return slavesInCluster.stream().filter({slave -> slave.isRunningSameVersionOfDeployment(deployment)}).collect().size();
+	}
+	
 	public boolean isClusterCurrentlyRunningAnyVersionOfDeployment(Deployment deployment)
 	{
 		return slavesInCluster.find{slave -> slave.isRunningAnyVersionOfDeployment deployment} != null;
@@ -49,5 +58,15 @@ public class SlaveManager
 	public void undeployAllVersionsFromCluster(Deployment deployment)
 	{
 		slavesInCluster.each{ slave -> slave.removeDeployment(deployment)};
+	}
+	
+	public void rebootSlave(Slave slave)
+	{
+		slavesInCluster.find {slave.equals}.reboot();
+	}
+	
+	public void shutdownSlave(Slave slave)
+	{	
+		slavesInCluster.find {slave.equals}.shutdown();
 	}
 }

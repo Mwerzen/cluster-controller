@@ -1,14 +1,24 @@
 package com.mikewerzen.servers.cluster.lifecycle.domain;
 
+import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventRegistry
 import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException
+
+import sun.security.jca.GetInstance
+
 import java.util.Date
 
 public class Slave
 {
+	private static EventRegistry eventRegistry = EventRegistry.getInstance();
+
 	String slaveName;
 	double loadOnSlave;
 	Date lastCheckIn;
 	Set<Deployment> deploymentsRunning = new HashSet<Deployment>();
+
+	public Slave()
+	{
+	}
 
 	public Slave(String slaveName, double loadOnSlave, Deployment...deployments)
 	{
@@ -26,12 +36,12 @@ public class Slave
 
 	public boolean isRunningSameVersionOfDeployment(Deployment deployment)
 	{
-		return deploymentsRunning.find {deployment.isSameVersionOfApplication} != null;
+		return deploymentsRunning.find {dep -> deployment.isSameVersionOfApplication dep} != null;
 	}
 
 	public boolean isRunningAnyVersionOfDeployment(Deployment deployment)
 	{
-		return deploymentsRunning.find {deployment.isSameApplication} != null;
+		return deploymentsRunning.find {dep -> deployment.isSameApplication dep} != null;
 	}
 
 
@@ -43,11 +53,28 @@ public class Slave
 		}
 
 		deploymentsRunning.add(deployment);
+		eventRegistry.addDeploymentEvent(this, deployment);
 	}
 
 	public void removeDeployment(Deployment deployment)
 	{
-		deploymentsRunning.removeIf {deployment.isSameApplication };
+		if(isRunningAnyVersionOfDeployment(deployment))
+		{
+			deploymentsRunning.removeIf {deployment.isSameApplication };
+			eventRegistry.addUndeploymentEvent(this, deployment);
+		}
+	}
+
+	public void reboot()
+	{
+		deploymentsRunning.each{removeDeployment};
+		eventRegistry.addRebootEvent(this, null);
+	}
+
+	public void shutdown()
+	{
+		deploymentsRunning.each{removeDeployment};
+		eventRegistry.addShutdownEvent(this, null);
 	}
 
 	@Override

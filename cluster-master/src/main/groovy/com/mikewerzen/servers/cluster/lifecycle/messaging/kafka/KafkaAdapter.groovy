@@ -6,16 +6,15 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.springframework.stereotype.Component
 import com.mikewerzen.servers.cluster.lifecycle.MessagePoller
-import com.mikewerzen.servers.cluster.lifecycle.domain.Application
 import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
 import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveMessenger
-import com.mikewerzen.servers.cluster.lifecycle.domain.StatusMessage
 import com.mikewerzen.servers.cluster.lifecycle.messaging.CommandMessage
 import com.mikewerzen.servers.cluster.lifecycle.messaging.DateUtil
-import com.mikewerzen.servers.cluster.lifecycle.domain.Command;
+import com.mikewerzen.servers.cluster.lifecycle.messaging.StatusMessage
 
-@Component
-class KafkaAdapter implements MessagePoller, SlaveMessenger {
+//@Component
+class KafkaAdapter //implements MessagePoller, SlaveMessenger {
+{
 
 	public static final String MASTER_NAME = "master";
 
@@ -48,53 +47,53 @@ class KafkaAdapter implements MessagePoller, SlaveMessenger {
 		producer = new KafkaProducer<String, CommandMessage>(producerProps)
 	}
 
-	@Override
-	public void sendDeployCommand(Application application, Slave slave) {
-		CommandMessage message = new CommandMessage();
-		message.source = MASTER_NAME;
-		message.target = slave.name;
-		message.commandType = Command.DEPLOY;
-		message.application = application;
-		message.timestamp = DateUtil.getCurrentDate();
-
-		ProducerRecord record = new ProducerRecord<String, CommandMessage>(KAFKA_COMMAND_TOPIC, message);
-		producer.send(record);
-	}
-
-	@Override
-	public void sendRebootCommand(Slave slave) {
-		CommandMessage message = new CommandMessage();
-		message.source = MASTER_NAME;
-		message.target = slave.name;
-		message.commandType = Command.REBOOT;
-		message.timestamp = DateUtil.getCurrentDate();
-
-		ProducerRecord record = new ProducerRecord<String, CommandMessage>(KAFKA_COMMAND_TOPIC, message);
-		producer.send(record);
-	}
-
-	@Override
-	public void sendUndeployCommand(Application application, Slave slave) {
-		CommandMessage message = new CommandMessage();
-		message.source = MASTER_NAME;
-		message.target = slave.name;
-		message.commandType = Command.UNDEPLOY;
-		message.application = application;
-		message.timestamp = DateUtil.getCurrentDate();
-
-		ProducerRecord record = new ProducerRecord<String, CommandMessage>(KAFKA_COMMAND_TOPIC, message);
-		producer.send(record);
-	}
-
-	@Override
-	public List<StatusMessage> getStatusMessages() {
-		ConsumerRecords<String, StatusMessage> records = consumer.poll(100);
-		List<StatusMessage> statusMessages = new ArrayList<StatusMessage>();
-		for(record in records) {
-			if(record.value)
-				statusMessages.add(record.value());
-		}
-		consumer.commitAsync();
-		return statusMessages;
-	}
+//	@Override
+//	public void sendDeployCommand(Application application, Slave slave) {
+//		CommandMessage message = new CommandMessage();
+//		message.source = MASTER_NAME;
+//		message.target = slave.name;
+//		message.commandType = Command.DEPLOY;
+//		message.application = application;
+//		message.timestamp = DateUtil.getCurrentDate();
+//
+//		ProducerRecord record = new ProducerRecord<String, CommandMessage>(KAFKA_COMMAND_TOPIC, message);
+//		producer.send(record);
+//	}
+//
+//	@Override
+//	public void sendRebootCommand(Slave slave) {
+//		CommandMessage message = new CommandMessage();
+//		message.source = MASTER_NAME;
+//		message.target = slave.name;
+//		message.commandType = Command.REBOOT;
+//		message.timestamp = DateUtil.getCurrentDate();
+//
+//		ProducerRecord record = new ProducerRecord<String, CommandMessage>(KAFKA_COMMAND_TOPIC, message);
+//		producer.send(record);
+//	}
+//
+//	@Override
+//	public void sendUndeployCommand(Application application, Slave slave) {
+//		CommandMessage message = new CommandMessage();
+//		message.source = MASTER_NAME;
+//		message.target = slave.name;
+//		message.commandType = Command.UNDEPLOY;
+//		message.application = application;
+//		message.timestamp = DateUtil.getCurrentDate();
+//
+//		ProducerRecord record = new ProducerRecord<String, CommandMessage>(KAFKA_COMMAND_TOPIC, message);
+//		producer.send(record);
+//	}
+//
+//	@Override
+//	public List<StatusMessage> getStatusMessages() {
+//		ConsumerRecords<String, StatusMessage> records = consumer.poll(100);
+//		List<StatusMessage> statusMessages = new ArrayList<StatusMessage>();
+//		for(record in records) {
+//			if(record.value)
+//				statusMessages.add(record.value());
+//		}
+//		consumer.commitAsync();
+//		return statusMessages;
+//	}
 }

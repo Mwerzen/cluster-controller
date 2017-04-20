@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component
 import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveMessenger
 import com.sun.corba.se.impl.io.ObjectStreamClass.CompareObjStrFieldsByName
 
-@Component
+//@Component
 class SlaveManager {
 
-	@Autowired
+//	@Autowired
 	SlaveMessenger messenger;
 
 	Set<Slave> slavesInCluster = new HashSet<Slave>();
