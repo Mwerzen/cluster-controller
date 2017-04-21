@@ -6,7 +6,7 @@ import static org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
-import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterControllerImpl
+import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
 import com.mikewerzen.servers.cluster.lifecycle.domain.Deployment
 import com.mikewerzen.servers.cluster.lifecycle.domain.DeploymentManager
 import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveManager
@@ -68,7 +68,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningAnyVersionOfDeployment_true()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 1);
+		ClusterController controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -80,7 +80,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningAnyVersionOfDeployment_false()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 1);
+		ClusterController controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -92,7 +92,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningSameVersionOfDeployment_true()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 1);
+		ClusterController controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -104,7 +104,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningSameVersionOfDeployment_false()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 1);
+		ClusterController controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -116,7 +116,7 @@ class SlaveManagerTest
 	@Test
 	public void test_getNumberOfSlaveRunningSameVersionOfDeployment()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 2, 1);
+		ClusterController controller = buildClusterController(3, 3, 2, 1);
 
 		manager = controller.slaveManager;
 
@@ -242,7 +242,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployThisVersionFromCluster_DiffVersion()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
+		ClusterController controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -256,7 +256,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployThisVersionFromCluster_SameVersion()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
+		ClusterController controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -270,7 +270,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployThisVersionFromCluster_NotInCluster()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
+		ClusterController controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -285,7 +285,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployAllVersionsFromCluster_DiffVersion()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
+		ClusterController controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -299,7 +299,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployAllVersionsFromCluster_SameVersion()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
+		ClusterController controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -313,7 +313,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployAllVersionsFromCluster_NotInCluster()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
+		ClusterController controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -327,7 +327,7 @@ class SlaveManagerTest
 	@Test
 	public void test_rebalanceSlaves_NoneNeeded()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 2);
+		ClusterController controller = buildClusterController(3, 3, 2);
 
 		manager = controller.slaveManager;
 		manager.rebalanceSlaves(controller.deploymentManager.deployments);
@@ -339,7 +339,7 @@ class SlaveManagerTest
 	@Test
 	public void test_rebalanceSlaves_TwoNeeded()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 1);
+		ClusterController controller = buildClusterController(3, 1);
 		controller.deploymentManager.deployments.each { it.replicationFactor = 3};
 
 		manager = controller.slaveManager;
@@ -353,7 +353,7 @@ class SlaveManagerTest
 	@Test
 	public void test_killDeadSlaves()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3, 2);
+		ClusterController controller = buildClusterController(3, 3, 2);
 
 		manager = controller.slaveManager;
 		manager.slavesInCluster.iterator().next().lastCheckInMillis = System.currentTimeMillis() - (2 * 60 * 60 * 1000L);
@@ -369,7 +369,7 @@ class SlaveManagerTest
 	@Test
 	public void test_rebootslave()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3);
+		ClusterController controller = buildClusterController(3, 3);
 
 		manager = controller.slaveManager;
 		manager.rebootSlave(controller.findSlave("Slave0"));
@@ -382,7 +382,7 @@ class SlaveManagerTest
 	@Test
 	public void test_rebootslave_byName()
 	{
-		ClusterControllerImpl controller = buildClusterController(3, 3);
+		ClusterController controller = buildClusterController(3, 3);
 
 		manager = controller.slaveManager;
 		manager.rebootSlave("Slave0");

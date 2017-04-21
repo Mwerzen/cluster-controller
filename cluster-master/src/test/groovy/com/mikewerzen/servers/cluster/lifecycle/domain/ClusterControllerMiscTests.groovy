@@ -5,14 +5,14 @@ import org.junit.Test
 
 import static com.mikewerzen.servers.cluster.lifecycle.domain.ClusterTestHelper.*
 import static org.junit.Assert.*
-import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterControllerImpl
+import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
 import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventRegistry
 import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException;
 
 class ClusterControllerMiscTests
 {
 
-	ClusterControllerImpl controller;
+	ClusterController controller;
 	EventRegistry registry = EventRegistry.getInstance();
 
 	@Before

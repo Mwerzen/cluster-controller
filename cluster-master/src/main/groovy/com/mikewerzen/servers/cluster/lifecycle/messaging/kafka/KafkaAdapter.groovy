@@ -45,6 +45,11 @@ class KafkaAdapter //implements MessagePoller, SlaveMessenger {
 
 		producer = new KafkaProducer<String, CommandMessage>(producerProps)
 	}
+	
+	def getMessages()
+	{
+		
+	}
 
 	//	@Override
 	//	public void sendDeployCommand(Application application, Slave slave) {

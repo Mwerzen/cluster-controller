@@ -12,7 +12,7 @@ import com.mikewerzen.servers.cluster.lifecycle.messaging.StatusMessage
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
 
-class KafkaJSONAdapter implements Serializer<CommandMessage>, Deserializer<StatusMessage> {
+class KafkaJSONAdapter implements Serializer<Object>, Deserializer<Object> {
 
 	def jsonSlurper = new JsonSlurper();
 	def jsonOutput = new JsonOutput();
@@ -26,7 +26,7 @@ class KafkaJSONAdapter implements Serializer<CommandMessage>, Deserializer<Statu
 
 
 	@Override
-	public byte[] serialize(String topic, CommandMessage obj) {
+	public byte[] serialize(String topic, Object obj) {
 		try {
 			return jsonOutput.toJson(obj).bytes;
 		}
@@ -36,7 +36,7 @@ class KafkaJSONAdapter implements Serializer<CommandMessage>, Deserializer<Statu
 	}
 
 	@Override
-	public StatusMessage deserialize(String topic, byte[] data) {
+	public Object deserialize(String topic, byte[] data) {
 		try {
 			return jsonSlurper.parseText(new String(data, StandardCharsets.UTF_8));
 		}
