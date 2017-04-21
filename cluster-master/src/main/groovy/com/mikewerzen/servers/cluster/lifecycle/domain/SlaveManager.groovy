@@ -75,6 +75,7 @@ public class SlaveManager
 		//this prevents us from redeploying to the failed slave.
 		List<Slave> slaves = findOptimalSlavesForDeployment(deployment, 1);
 		slaves.each {it.addDeployment(deployment)};
+		slave.removeDeployment(deployment);
 		return slaves;
 
 	}

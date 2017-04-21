@@ -76,7 +76,7 @@ class SlaveManagerTest
 
 		assertTrue(manager.isClusterCurrentlyRunningAnyVersionOfDeployment(dep));
 	}
-	
+
 	@Test
 	public void test_isClusterRunningAnyVersionOfDeployment_false()
 	{
@@ -88,7 +88,7 @@ class SlaveManagerTest
 
 		assertFalse(manager.isClusterCurrentlyRunningAnyVersionOfDeployment(dep));
 	}
-	
+
 	@Test
 	public void test_isClusterRunningSameVersionOfDeployment_true()
 	{
@@ -100,7 +100,7 @@ class SlaveManagerTest
 
 		assertTrue(manager.isClusterCurrentlyRunningSameVersionOfDeployment(dep));
 	}
-	
+
 	@Test
 	public void test_isClusterRunningSameVersionOfDeployment_false()
 	{
@@ -166,7 +166,32 @@ class SlaveManagerTest
 		assertTrue(results.get(2).loadOnSlave < results.get(3).loadOnSlave);
 		assertTrue(results.get(3).loadOnSlave < results.get(4).loadOnSlave);
 	}
-	
+
+	@Test
+	public void test_reassignDeploymentToNewSlave()
+	{
+		manager = buildSlaveManager(5);
+
+		double load = 0;
+		manager.slavesInCluster.toSorted().each { slave -> slave.loadOnSlave = load++;};
+
+		def dep = buildDeployment();
+
+		def results = manager.deployToCluster(dep);
+
+		assertEquals(1, results.size());
+		assertEquals("Slave0", results.get(0).slaveName);
+		assertTrue(results.get(0).isRunningSameVersionOfDeployment(dep));
+		assertTrue(manager.findSlaveForName("Slave0").isRunningSameVersionOfDeployment(dep));
+
+		results = manager.reassignDeploymentToNewSlave(dep, manager.findSlaveForName("Slave0"));
+
+		assertEquals(1, results.size());
+		assertEquals("Slave1", results.get(0).slaveName);
+		assertTrue(results.get(0).isRunningSameVersionOfDeployment(dep));
+		assertFalse(manager.findSlaveForName("Slave0").isRunningSameVersionOfDeployment(dep));
+	}
+
 	@Test
 	public void test_deployToCluster_SingleSlave()
 	{
@@ -177,23 +202,24 @@ class SlaveManagerTest
 
 		def dep = buildDeployment();
 
-		def results = manager.findOptimalSlavesForDeployment(dep);
+		def results = manager.deployToCluster(dep);
 
 		assertEquals(1, results.size());
 		assertEquals("Slave0", results.get(0).slaveName);
+		assertTrue(results.get(0).isRunningSameVersionOfDeployment(dep));
 	}
 
 	@Test
 	public void test_deployToCluster_MultiDeployment()
 	{
-		manager = buildSlaveManager(5);
+		manager = buildSlaveManager(8);
 
 		double load = 0;
 		manager.slavesInCluster.toSorted().each { slave -> slave.loadOnSlave = load++;};
 
 		def dep = buildDeployment("App", "1", 5);
 
-		def results = manager.findOptimalSlavesForDeployment(dep);
+		def results = manager.deployToCluster(dep);
 		println(results)
 		assertEquals(5, results.size());
 		assertEquals("Slave0", results.get(0).slaveName);
@@ -201,93 +227,99 @@ class SlaveManagerTest
 		assertEquals("Slave2", results.get(2).slaveName);
 		assertEquals("Slave3", results.get(3).slaveName);
 		assertEquals("Slave4", results.get(4).slaveName);
+		assertTrue(results.get(0).isRunningSameVersionOfDeployment(dep));
+		assertTrue(results.get(1).isRunningSameVersionOfDeployment(dep));
+		assertTrue(results.get(2).isRunningSameVersionOfDeployment(dep));
+		assertTrue(results.get(3).isRunningSameVersionOfDeployment(dep));
+		assertTrue(results.get(4).isRunningSameVersionOfDeployment(dep));
 		assertTrue(results.get(0).loadOnSlave < results.get(1).loadOnSlave);
 		assertTrue(results.get(1).loadOnSlave < results.get(2).loadOnSlave);
 		assertTrue(results.get(2).loadOnSlave < results.get(3).loadOnSlave);
 		assertTrue(results.get(3).loadOnSlave < results.get(4).loadOnSlave);
+		assertEquals(5, manager.getNumberOfSlavesRunningSameVersionOfDeployment(dep));
 	}
-	
+
 	@Test
 	public void test_undeployThisVersionFromCluster_DiffVersion()
 	{
 		ClusterController controller = buildClusterController(3, 3, 3);
-		
+
 		manager = controller.slaveManager;
-		
+
 		def dep = buildDeployment("App0", "Over9000.0");
 		manager.undeployFromCluster(dep, false);
-		
+
 		assertEquals(0, registry.getAndClearUndeploymentEvents().size());
 		assertEquals(2, manager.findSlaveForName("Slave0").deploymentsRunning.size());
 	}
-	
+
 	@Test
 	public void test_undeployThisVersionFromCluster_SameVersion()
 	{
 		ClusterController controller = buildClusterController(3, 3, 3);
-		
+
 		manager = controller.slaveManager;
-		
+
 		def dep = buildDeployment("App0", "1");
 		manager.undeployFromCluster(dep, false);
-		
+
 		assertEquals(3, registry.getAndClearUndeploymentEvents().size());
 		assertEquals(1, manager.findSlaveForName("Slave0").deploymentsRunning.size());
 	}
-	
+
 	@Test
 	public void test_undeployThisVersionFromCluster_NotInCluster()
 	{
 		ClusterController controller = buildClusterController(3, 3, 3);
-		
+
 		manager = controller.slaveManager;
-		
+
 		def dep = buildDeployment("App4", "Over9000.0");
 		manager.undeployFromCluster(dep, false);
-		
+
 		assertEquals(0, registry.getAndClearUndeploymentEvents().size());
 		assertEquals(2, manager.findSlaveForName("Slave0").deploymentsRunning.size());
 	}
-	
-	
+
+
 	@Test
 	public void test_undeployAllVersionsFromCluster_DiffVersion()
 	{
 		ClusterController controller = buildClusterController(3, 3, 3);
-		
+
 		manager = controller.slaveManager;
-		
+
 		def dep = buildDeployment("App0", "Over9000.0");
 		manager.undeployFromCluster(dep, true);
-		
+
 		assertEquals(3, registry.getAndClearUndeploymentEvents().size());
 		assertEquals(1, manager.findSlaveForName("Slave0").deploymentsRunning.size());
 	}
-	
+
 	@Test
 	public void test_undeployAllVersionsFromCluster_SameVersion()
 	{
 		ClusterController controller = buildClusterController(3, 3, 3);
-		
+
 		manager = controller.slaveManager;
-		
+
 		def dep = buildDeployment("App0", "1");
 		manager.undeployFromCluster(dep, true);
-		
+
 		assertEquals(3, registry.getAndClearUndeploymentEvents().size());
 		assertEquals(1, manager.findSlaveForName("Slave0").deploymentsRunning.size());
 	}
-	
+
 	@Test
 	public void test_undeployAllVersionsFromCluster_NotInCluster()
 	{
 		ClusterController controller = buildClusterController(3, 3, 3);
-		
+
 		manager = controller.slaveManager;
-		
+
 		def dep = buildDeployment("App4", "Over9000.0");
 		manager.undeployFromCluster(dep, true);
-		
+
 		assertEquals(0, registry.getAndClearUndeploymentEvents().size());
 		assertEquals(2, manager.findSlaveForName("Slave0").deploymentsRunning.size());
 	}
