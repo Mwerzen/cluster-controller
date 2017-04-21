@@ -23,21 +23,25 @@ public class EventRegistry
 
 	public synchronized void addDeploymentEvent(Slave slave, Deployment deployment)
 	{
+		println("Deploying $deployment to $slave");
 		deploymentEvents.add(new ClusterEvent(slave, deployment));
 	}
 
 	public synchronized void addUndeploymentEvent(Slave slave, Deployment deployment)
 	{
+		println("Undeploying $deployment from $slave");
 		undeploymentEvents.add(new ClusterEvent(slave, deployment));
 	}
 
 	public synchronized void addRebootEvent(Slave slave, Deployment deployment)
 	{
+		println("Rebooting $slave");
 		rebootEvents.add(new ClusterEvent(slave, deployment));
 	}
 
 	public synchronized void addShutdownEvent(Slave slave, Deployment deployment)
 	{
+		println("Shutting down $slave");
 		shutdownEvents.add(new ClusterEvent(slave, deployment));
 	}
 

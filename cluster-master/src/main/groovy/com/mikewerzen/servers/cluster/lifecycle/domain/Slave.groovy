@@ -36,7 +36,7 @@ public class Slave
 
 	public boolean isRunningSameVersionOfDeployment(Deployment deployment)
 	{
-		return deploymentsRunning.find {dep -> deployment.isSameVersionOfApplication dep} != null;
+		return deploymentsRunning.find {dep -> dep.isSameVersionOfApplication deployment} != null;
 	}
 
 	public boolean isRunningAnyVersionOfDeployment(Deployment deployment)
@@ -70,14 +70,15 @@ public class Slave
 
 	public Slave reboot()
 	{
-		deploymentsRunning.each{removeDeployment};
+		deploymentsRunning.each{removeDeployment(it)};
 		eventRegistry.addRebootEvent(this, null);
 		return this;
 	}
 
 	public Slave shutdown()
 	{
-		deploymentsRunning.each{removeDeployment};
+		deploymentsRunning.each{eventRegistry.addUndeploymentEvent(this, it)};
+		deploymentsRunning.clear();
 		eventRegistry.addShutdownEvent(this, null);
 		return this;
 	}

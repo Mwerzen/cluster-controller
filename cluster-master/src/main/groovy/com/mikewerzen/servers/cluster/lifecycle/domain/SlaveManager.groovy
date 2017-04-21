@@ -15,7 +15,8 @@ public class SlaveManager
 
 	public void registerSlave(Slave slave)
 	{
-		slavesInCluster.add(slave);
+		if(slave)
+			slavesInCluster.add(slave);
 	}
 
 	public int getNumberOfSlavesRunningSameVersionOfDeployment(Deployment deployment)
@@ -33,8 +34,24 @@ public class SlaveManager
 		return slavesInCluster.find{slave -> slave.isRunningSameVersionOfDeployment deployment} != null;
 	}
 
-	public List findOptimalSlavesForDeployment(Deployment deployment)
+	public List<Slave> findOptimalSlavesForDeployment(Deployment deployment)
 	{
+		findOptimalSlavesForDeploymentWithModifier(deployment, 0);
+	}
+
+	public List<Slave> findOptimalSlavesForDeploymentWithModifier(Deployment deployment, int modifier)
+	{
+		int numberOfSlavesNeeded = deployment.replicationFactor - getNumberOfSlavesRunningSameVersionOfDeployment(deployment) + modifier;
+		return findOptimalSlavesForDeployment(deployment, numberOfSlavesNeeded);
+	}
+
+	public List<Slave> findOptimalSlavesForDeployment(Deployment deployment, int numberOfSlaves)
+	{
+		if (numberOfSlaves < 1)
+		{
+			return null;
+		}
+
 		List<Slave> slavesNotRunningAnyVersionOfDeployment = slavesInCluster.stream().filter({slave -> !slave.isRunningAnyVersionOfDeployment(deployment)}).collect();
 
 		if (slavesNotRunningAnyVersionOfDeployment.size() == 0)
@@ -44,18 +61,31 @@ public class SlaveManager
 
 		List<Slave> sortedSlaves = slavesNotRunningAnyVersionOfDeployment.toSorted{a, b -> a.loadOnSlave <=> b.loadOnSlave};
 
-		if(sortedSlaves.size() > deployment.replicationFactor)
+		if(sortedSlaves.size() > numberOfSlaves)
 		{
-			return sortedSlaves.subList(0, deployment.replicationFactor);
+			return sortedSlaves.subList(0, numberOfSlaves);
 		}
 
 		return sortedSlaves;
 	}
 
-	public List deployToCluster(Deployment deployment)
+	public List<Slave> reassignDeploymentToNewSlave(Deployment deployment, Slave slave)
 	{
-		return findOptimalSlavesForDeployment(deployment).stream().map({slave -> slave.addDeployment(deployment)}).collect();
+		//Note, we are finding an optimal slave for deployment BEFORE we remove deployment from the slave;
+		//this prevents us from redeploying to the failed slave.
+		List<Slave> slaves = findOptimalSlavesForDeployment(deployment, 1);
+		slaves.each {it.addDeployment(deployment)};
+		return slaves;
+
 	}
+
+	public List<Slave> deployToCluster(Deployment deployment)
+	{
+		List<Slave> slaves = findOptimalSlavesForDeployment(deployment);
+		slaves.each{slave -> slave.addDeployment(deployment)};
+		return slaves;
+	}
+
 
 	public void undeployFromCluster(Deployment deployment, boolean allVersions)
 	{
@@ -86,19 +116,43 @@ public class SlaveManager
 
 	public void shutdownSlave(String name)
 	{
-		slavesInCluster.remove {findSlaveForName(name).shutdown()};
+		shutdownSlave(findSlaveForName(name));
 	}
 
 	public void shutdownSlave(Slave slave)
 	{
-		slavesInCluster.remove {slave.shutdown()};
+		slave.shutdown()
+		slavesInCluster.remove {slave};
 	}
 
-	public List shutdownDeadSlaves()
+	public void rebalanceSlaves(Set<Deployment> deployments)
 	{
-		List deadSlaves = slavesInCluster.findAll{slave -> slave.isSlaveDead()};
-		deadSlaves.each{shutdownSlave};
+		for (deployment in deployments)
+		{
+			try
+			{
+				deployToCluster(deployment);
+			}
+			catch (ClusterIntegrityException exception)
+			{
+				continue;
+			}
+		}
+
+
+	}
+
+	public Set<Slave> shutdownDeadSlaves()
+	{
+		Set<Slave> deadSlaves = slavesInCluster.findAll{slave -> slave.isSlaveDead()};
+		deadSlaves.each{shutdownSlave(it)};
 		slavesInCluster.removeAll(deadSlaves);
 		return deadSlaves;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "SlaveManager [slavesInCluster=" + slavesInCluster + "]";
 	}
 }
