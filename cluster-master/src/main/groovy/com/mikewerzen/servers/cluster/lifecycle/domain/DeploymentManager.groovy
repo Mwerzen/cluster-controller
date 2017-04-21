@@ -13,9 +13,9 @@ public class DeploymentManager
 		}
 		else
 		{
-			if( deployments.contains(deployment))
+			Deployment oldDeployment = deployments.find {deployment.isSameVersionOfApplication(it)};
+			if(oldDeployment)
 			{
-				def oldDeployment = deployments.find { dep -> deployment.equals(deployment)};
 				oldDeployment.replicationFactor += deployment.replicationFactor;
 			}
 			else

@@ -36,13 +36,16 @@ public class ClusterController
 		return deploymentManager.findDeployment(name);
 	}
 
-	public List<Slave> deploy(Deployment deployment)
+	public List<Slave> deploy(Deployment deployment, boolean keepOldVersions = false)
 	{
 		def slavesDeployedTo = new ArrayList<Deployment>();
 		try
 		{
+			if(!keepOldVersions)
+				slaveManager.undeployAllVersionsFromCluster(deployment);
+			
 			slavesDeployedTo = slaveManager.deployToCluster(deployment);
-			deploymentManager.addDeployment(deployment, false);
+			deploymentManager.addDeployment(deployment, keepOldVersions);
 		}
 		catch (ClusterIntegrityException e)
 		{
