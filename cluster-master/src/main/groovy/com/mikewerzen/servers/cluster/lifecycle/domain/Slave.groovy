@@ -70,7 +70,8 @@ public class Slave
 
 	public Slave reboot()
 	{
-		deploymentsRunning.each{removeDeployment(it)};
+		deploymentsRunning.each{eventRegistry.addUndeploymentEvent(this, it);};
+		deploymentsRunning.clear();
 		eventRegistry.addRebootEvent(this, null);
 		return this;
 	}

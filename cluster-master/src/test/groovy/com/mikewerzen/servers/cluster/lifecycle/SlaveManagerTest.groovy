@@ -365,4 +365,30 @@ class SlaveManagerTest
 		assertEquals(2, manager.slavesInCluster.size());
 		assertEquals(2, registry.getAndClearUndeploymentEvents().size());
 	}
+	
+	@Test
+	public void test_rebootslave()
+	{
+		ClusterController controller = buildClusterController(3, 3);
+		
+		manager = controller.slaveManager;
+		manager.rebootSlave(controller.findSlave("Slave0"));
+		
+		assertEquals(1, registry.getUndeploymentEvents().size());
+		assertEquals(1, registry.getRebootEvents().size());
+		assertEquals(2, manager.slavesInCluster.size());
+	}
+	
+	@Test
+	public void test_rebootslave_byName()
+	{
+		ClusterController controller = buildClusterController(3, 3);
+		
+		manager = controller.slaveManager;
+		manager.rebootSlave("Slave0");
+		
+		assertEquals(1, registry.getUndeploymentEvents().size());
+		assertEquals(1, registry.getRebootEvents().size());
+		assertEquals(2, manager.slavesInCluster.size());
+	}
 }

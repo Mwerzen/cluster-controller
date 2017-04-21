@@ -51,7 +51,7 @@ public class ClusterController
 
 		return slavesDeployedTo;
 	}
-	
+
 	public List<Slave> handleFailedDeployment(Deployment deployment, Slave slave)
 	{
 		return slaveManager.reassignDeploymentToNewSlave(deployment, slave);
@@ -62,10 +62,20 @@ public class ClusterController
 		slaveManager.undeployFromCluster(deployment, allVersions);
 		deploymentManager.removeDeployment(deployment, allVersions);
 	}
-	
+
+	public void refreshSlave(String name, double load)
+	{
+		Slave slave = findSlave(name);
+		if(slave)
+		{	
+			slave.lastCheckInMillis = System.currentTimeMillis();
+			slave.loadOnSlave = load;
+		}
+	}
+
 	public void rebalanceCluster()
 	{
 		slaveManager.shutdownDeadSlaves();
-		deploymentManager.deployments.each{dep -> slaveManager.is};
+		deploymentManager.deployments.each{dep -> slaveManager.deployToCluster(dep)};
 	}
 }

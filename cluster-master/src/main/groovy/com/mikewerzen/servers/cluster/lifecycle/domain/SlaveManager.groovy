@@ -112,7 +112,8 @@ public class SlaveManager
 
 	public void rebootSlave(Slave slave)
 	{
-		slavesInCluster.remove{slave.reboot()};
+		if(slave)
+			slavesInCluster.remove(slave.reboot());
 	}
 
 	public void shutdownSlave(String name)
