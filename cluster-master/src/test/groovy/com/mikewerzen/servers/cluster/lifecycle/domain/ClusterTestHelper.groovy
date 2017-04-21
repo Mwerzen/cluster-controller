@@ -1,7 +1,7 @@
-package com.mikewerzen.servers.cluster.lifecycle
+package com.mikewerzen.servers.cluster.lifecycle.domain;
 
 import java.util.Date
-import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
+import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterControllerImpl
 import com.mikewerzen.servers.cluster.lifecycle.domain.Deployment
 import com.mikewerzen.servers.cluster.lifecycle.domain.DeploymentManager
 import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
@@ -18,9 +18,9 @@ class ClusterTestHelper
 		EventRegistry.getInstance().getAndClearShutdownEvents();
 	}
 
-	public static ClusterController buildClusterController(int numberOfSlaves, int...replicationFactors)
+	public static ClusterControllerImpl buildClusterController(int numberOfSlaves, int...replicationFactors)
 	{
-		def cc = new ClusterController();
+		def cc = new ClusterControllerImpl();
 		cc.deploymentManager = buildDeploymentManager(replicationFactors);
 		cc.slaveManager = buildSlaveManager(numberOfSlaves);
 

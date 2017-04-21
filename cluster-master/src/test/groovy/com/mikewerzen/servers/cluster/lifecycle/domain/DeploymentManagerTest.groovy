@@ -1,6 +1,6 @@
-package com.mikewerzen.servers.cluster.lifecycle
+package com.mikewerzen.servers.cluster.lifecycle.domain;
 
-import static com.mikewerzen.servers.cluster.lifecycle.ClusterTestHelper.*;
+import static com.mikewerzen.servers.cluster.lifecycle.domain.ClusterTestHelper.*;
 import static org.junit.Assert.*
 
 import org.junit.Before

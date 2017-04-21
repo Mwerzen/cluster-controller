@@ -1,12 +1,12 @@
-package com.mikewerzen.servers.cluster.lifecycle
+package com.mikewerzen.servers.cluster.lifecycle.domain;
 
-import static com.mikewerzen.servers.cluster.lifecycle.ClusterTestHelper.*;
+import static com.mikewerzen.servers.cluster.lifecycle.domain.ClusterTestHelper.*;
 import static org.junit.Assert.*
 
 import org.junit.Before
 import org.junit.Test
 
-import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
+import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterControllerImpl
 import com.mikewerzen.servers.cluster.lifecycle.domain.Deployment
 import com.mikewerzen.servers.cluster.lifecycle.domain.DeploymentManager
 import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveManager
@@ -68,7 +68,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningAnyVersionOfDeployment_true()
 	{
-		ClusterController controller = buildClusterController(3, 1);
+		ClusterControllerImpl controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -80,7 +80,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningAnyVersionOfDeployment_false()
 	{
-		ClusterController controller = buildClusterController(3, 1);
+		ClusterControllerImpl controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -92,7 +92,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningSameVersionOfDeployment_true()
 	{
-		ClusterController controller = buildClusterController(3, 1);
+		ClusterControllerImpl controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -104,7 +104,7 @@ class SlaveManagerTest
 	@Test
 	public void test_isClusterRunningSameVersionOfDeployment_false()
 	{
-		ClusterController controller = buildClusterController(3, 1);
+		ClusterControllerImpl controller = buildClusterController(3, 1);
 
 		manager = controller.slaveManager;
 
@@ -116,7 +116,7 @@ class SlaveManagerTest
 	@Test
 	public void test_getNumberOfSlaveRunningSameVersionOfDeployment()
 	{
-		ClusterController controller = buildClusterController(3, 3, 2, 1);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 2, 1);
 
 		manager = controller.slaveManager;
 
@@ -242,7 +242,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployThisVersionFromCluster_DiffVersion()
 	{
-		ClusterController controller = buildClusterController(3, 3, 3);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -256,7 +256,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployThisVersionFromCluster_SameVersion()
 	{
-		ClusterController controller = buildClusterController(3, 3, 3);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -270,7 +270,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployThisVersionFromCluster_NotInCluster()
 	{
-		ClusterController controller = buildClusterController(3, 3, 3);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -285,7 +285,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployAllVersionsFromCluster_DiffVersion()
 	{
-		ClusterController controller = buildClusterController(3, 3, 3);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -299,7 +299,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployAllVersionsFromCluster_SameVersion()
 	{
-		ClusterController controller = buildClusterController(3, 3, 3);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -313,7 +313,7 @@ class SlaveManagerTest
 	@Test
 	public void test_undeployAllVersionsFromCluster_NotInCluster()
 	{
-		ClusterController controller = buildClusterController(3, 3, 3);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 3);
 
 		manager = controller.slaveManager;
 
@@ -327,7 +327,7 @@ class SlaveManagerTest
 	@Test
 	public void test_rebalanceSlaves_NoneNeeded()
 	{
-		ClusterController controller = buildClusterController(3, 3, 2);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 2);
 
 		manager = controller.slaveManager;
 		manager.rebalanceSlaves(controller.deploymentManager.deployments);
@@ -339,7 +339,7 @@ class SlaveManagerTest
 	@Test
 	public void test_rebalanceSlaves_TwoNeeded()
 	{
-		ClusterController controller = buildClusterController(3, 1);
+		ClusterControllerImpl controller = buildClusterController(3, 1);
 		controller.deploymentManager.deployments.each { it.replicationFactor = 3};
 
 		manager = controller.slaveManager;
@@ -353,7 +353,7 @@ class SlaveManagerTest
 	@Test
 	public void test_killDeadSlaves()
 	{
-		ClusterController controller = buildClusterController(3, 3, 2);
+		ClusterControllerImpl controller = buildClusterController(3, 3, 2);
 
 		manager = controller.slaveManager;
 		manager.slavesInCluster.iterator().next().lastCheckInMillis = System.currentTimeMillis() - (2 * 60 * 60 * 1000L);
@@ -365,28 +365,28 @@ class SlaveManagerTest
 		assertEquals(2, manager.slavesInCluster.size());
 		assertEquals(2, registry.getAndClearUndeploymentEvents().size());
 	}
-	
+
 	@Test
 	public void test_rebootslave()
 	{
-		ClusterController controller = buildClusterController(3, 3);
-		
+		ClusterControllerImpl controller = buildClusterController(3, 3);
+
 		manager = controller.slaveManager;
 		manager.rebootSlave(controller.findSlave("Slave0"));
-		
+
 		assertEquals(1, registry.getUndeploymentEvents().size());
 		assertEquals(1, registry.getRebootEvents().size());
 		assertEquals(2, manager.slavesInCluster.size());
 	}
-	
+
 	@Test
 	public void test_rebootslave_byName()
 	{
-		ClusterController controller = buildClusterController(3, 3);
-		
+		ClusterControllerImpl controller = buildClusterController(3, 3);
+
 		manager = controller.slaveManager;
 		manager.rebootSlave("Slave0");
-		
+
 		assertEquals(1, registry.getUndeploymentEvents().size());
 		assertEquals(1, registry.getRebootEvents().size());
 		assertEquals(2, manager.slavesInCluster.size());
