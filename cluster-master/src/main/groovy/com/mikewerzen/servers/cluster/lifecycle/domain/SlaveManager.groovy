@@ -142,8 +142,13 @@ public class SlaveManager
 				continue;
 			}
 		}
-
-
+	}
+	
+	public void rebootInconsistentSlaves()
+	{
+		Set<Slave> inconsistentSlaves = slavesInCluster.findAll {slave -> !slave.isConsistent()}
+		inconsistentSlaves.each{if(it.loadOnSlave != 0) rebootSlave(it)}
+		slavesInCluster.removeAll(inconsistentSlaves);
 	}
 
 	public Set<Slave> shutdownDeadSlaves()

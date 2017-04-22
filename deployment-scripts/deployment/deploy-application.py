@@ -4,15 +4,15 @@ import sys
 
 def main():
     command = {}
-    command['applicationName'] = "DankDankDocks"
-    command['applicationVersion'] = "1.0"
+    command['applicationName'] = "PewPew"
+    command['applicationVersion'] = "8.0"
     command['applicationCommand'] = "./java -jar danker"
     command['replicationFactor'] = 3
-    command['keepOldVersions'] = True;
+    command['keepOldVersions'] = False;
 
     resp = requests.post('http://localhost:8080/deploy', json=command)
     
-    if resp.status_code == 0:
+    if resp.status_code == 200:
         print("Deployed Successfully")
         sys.exit(0)
     elif resp.status_code == 503:

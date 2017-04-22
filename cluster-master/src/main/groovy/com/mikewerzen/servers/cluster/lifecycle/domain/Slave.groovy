@@ -12,9 +12,11 @@ public class Slave
 	private static EventRegistry eventRegistry = EventRegistry.getInstance();
 
 	String slaveName;
-	double loadOnSlave;
+	int loadOnSlave;
 	long lastCheckInMillis;
 	Set<Deployment> deploymentsRunning = new HashSet<Deployment>();
+
+	int inconsistentMarks = 0;
 
 	public Slave()
 	{
@@ -37,12 +39,12 @@ public class Slave
 
 	public boolean isRunningSameVersionOfDeployment(Deployment deployment)
 	{
-		return deploymentsRunning.find {dep -> dep.isSameVersionOfApplication deployment} != null;
+		return deploymentsRunning.find{ dep -> dep.isSameVersionOfApplication deployment } != null;
 	}
 
 	public boolean isRunningAnyVersionOfDeployment(Deployment deployment)
 	{
-		return deploymentsRunning.find {dep -> deployment.isSameApplication dep} != null;
+		return deploymentsRunning.find{ dep -> deployment.isSameApplication dep } != null;
 	}
 
 
@@ -53,6 +55,7 @@ public class Slave
 			throw new ClusterIntegrityException("Slave: " + this + " is already running a version of this deployment! Undeploy first.");
 		}
 
+		loadOnSlave++;
 		deploymentsRunning.add(deployment);
 		eventRegistry.addDeploymentEvent(this, deployment);
 		return deployment;
@@ -62,7 +65,11 @@ public class Slave
 	{
 		if(isRunningAnyVersionOfDeployment(deployment))
 		{
-			deploymentsRunning.removeIf {dep -> deployment.isSameApplication(dep) };
+			loadOnSlave--;
+			deploymentsRunning.removeIf
+			{ dep ->
+				deployment.isSameApplication(dep)
+			};
 			eventRegistry.addUndeploymentEvent(this, deployment);
 			return deployment;
 		}
@@ -71,7 +78,10 @@ public class Slave
 
 	public Slave reboot()
 	{
-		deploymentsRunning.each{eventRegistry.addUndeploymentEvent(this, it);};
+		deploymentsRunning.each
+		{
+			eventRegistry.addUndeploymentEvent(this, it);
+		};
 		deploymentsRunning.clear();
 		eventRegistry.addRebootEvent(this, null);
 		return this;
@@ -79,7 +89,10 @@ public class Slave
 
 	public Slave shutdown()
 	{
-		deploymentsRunning.each{eventRegistry.addUndeploymentEvent(this, it)};
+		deploymentsRunning.each
+		{
+			eventRegistry.addUndeploymentEvent(this, it)
+		};
 		deploymentsRunning.clear();
 		eventRegistry.addShutdownEvent(this, null);
 		return this;
@@ -88,6 +101,22 @@ public class Slave
 	public boolean isSlaveDead()
 	{
 		return lastCheckInMillis < (System.currentTimeMillis() - (60 * 1000L));
+	}
+
+	public boolean isConsistent()
+	{
+
+		if (loadOnSlave != deploymentsRunning.size())
+		{
+			inconsistentMarks++;
+			if(inconsistentMarks == 5)
+				return false;
+		}
+		else
+		{
+			inconsistentMarks = 0;
+		}
+		return true;
 	}
 
 	@Override
@@ -120,6 +149,6 @@ public class Slave
 	@Override
 	public String toString()
 	{
-		return "Slave [slaveName=" + slaveName + ", deploymentsRunning=" + deploymentsRunning + "]";
+		return "Slave [slaveName=$slaveName , loadOnSlave=$loadOnSlave, lastCheckInMillis=$lastCheckInMillis, inconsistentMarks=$inconsistentMarks, deploymentsRunning=$deploymentsRunning]";
 	}
 }

@@ -1,6 +1,7 @@
 package com.mikewerzen.servers.cluster.lifecycle.domain;
 
 import com.mikewerzen.servers.cluster.lifecycle.domain.event.*;
+import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -25,11 +26,12 @@ public class ClusterController
 	public void executeStep()
 	{
 		eventPoller.pollInboundEvents();
-		registry.getAndClearStatusEvents().each {event -> refreshSlave(event.name, event.load) };
+		registry.getAndClearStatusEvents().each {event -> println("Slave Refreshed: $event"); refreshSlave(event.name, event.load) };
 		registry.getAndClearFailedEvents().each {event -> handleFailedDeployment(findDeployment(event.app, event.version), findSlave(event.name))};
 		registry.getAndClearFinishedEvents();
 		rebalanceCluster();
 		eventPoller.pollOutboundEvents();
+		println(this)
 	}
 
 
@@ -117,6 +119,27 @@ public class ClusterController
 	protected void rebalanceCluster()
 	{
 		slaveManager.shutdownDeadSlaves();
-		deploymentManager.deployments.each{dep -> slaveManager.deployToCluster(dep)};
+		
+		slaveManager.rebootInconsistentSlaves();
+
+		deploymentManager.deployments.each
+		{dep ->
+			try
+			{
+				if(slaveManager.getNumberOfSlavesRunningSameVersionOfDeployment(dep) != dep.getReplicationFactor())
+					slaveManager.deployToCluster(dep)
+			}
+			catch (ClusterIntegrityException e)
+			{
+				println("Could not balance deployment: $dep")
+			}
+		};
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return "ClusterController [\n\tdeploymentManager=" + deploymentManager + ", \n\tslaveManager=" + slaveManager + "]";
 	}
 }

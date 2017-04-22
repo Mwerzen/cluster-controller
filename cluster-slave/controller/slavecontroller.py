@@ -16,6 +16,7 @@ SOCKET_HOST = '192.168.1.50'
 SOCKET_PORT = 80
 
 NAME = ""
+MASTER_NAME = "master"
 
 KAFKA_HOST = '192.168.1.50:9092'
 KAFKA_TOPIC = "test"
@@ -32,7 +33,7 @@ MSG_TYPE = 'type'
 MSG_LOAD = 'load'
 MSG_APPLICATION_NAME = 'applicationName'
 MSG_APPLICATION_VERSION = 'applicationVersion'
-MSG_APPLICATION_COMMANDS = 'deploymentCommands'
+MSG_APPLICATION_COMMAND = 'applicationCommand'
 
 # STATUS_MSG_SOURCE = 'source'
 # STATUS_MSG_LOAD = 'load'
@@ -54,6 +55,8 @@ TARGET_PROCESS_ROOT_DIR = '/home/pi/'
 applications = []
 appsToPids = {}
 
+shouldContiue = True
+isNotFirstRun = False;
 ## ---------------------
 # #     Main
 ## ---------------------
@@ -77,16 +80,25 @@ def main():
     print("Sent First Message to Topic: " + KAFKA_TOPIC)
     
     # Listen For Deployment Command
-    while (True):
+    global isNotFirstRun
+    global shouldContiue
+    
+    while (shouldContiue):
         for msg in consumer:
-            handleInboundMessage(msg)
+            if(shouldContiue):
+                shouldContiue = handleInboundMessage(msg)
         monitorApplications(producer)
-        producer.send(KAFKA_TOPIC, buildStatusMessage())        
+        producer.send(KAFKA_TOPIC, buildStatusMessage())
+        debug(applications)   
+        isNotFirstRun = True    
 
     producer.close()
     consumer.close()
+    
+    reboot()
 
 def handleInboundMessage(msg):
+    global isNotFirstRun
     try:
         body = json.loads(msg.value.decode(KAFKA_JSON_ENCODING))
         if (MSG_TARGET in body and body[MSG_TARGET] == NAME):
@@ -94,13 +106,16 @@ def handleInboundMessage(msg):
             if (MSG_TYPE in body and body[MSG_TYPE] == MessageType.DEPLOY.value):
                 deployApplication(buildApplicationFromBody(body))
             elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.UNDEPLOY.value):
-                undeployApplication(buildApplicationFromBody(body))
-            elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.REBOOT.value):
-                reboot()
-            elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.SHUTDOWN.value):
-                reboot()
+                undeployApplication(findApplicationFromBody(body))
+            elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.REBOOT.value and isNotFirstRun):
+                return False
+            elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.SHUTDOWN.value and isNotFirstRun):
+                shutdown()
+                return False
     except:
         print("Unexpected error:", sys.exc_info()[0])
+    
+    return True
 
 def monitorApplications(producer):
     global applications
@@ -158,6 +173,8 @@ class MessageType(Enum):
 def buildStatusMessage():
     statusMessage = {}
     statusMessage[MSG_SOURCE] = NAME
+    statusMessage[MSG_TARGET] = MASTER_NAME
+    statusMessage[MSG_TYPE] = MessageType.STATUS.value
     statusMessage[MSG_LOAD] = len(applications)
     
     debug("StatusMessage: " + json.dumps(statusMessage))
@@ -166,6 +183,8 @@ def buildStatusMessage():
 def buildFinishedMessage(appName, appVersion):
     finishedMessage = {}
     finishedMessage[MSG_SOURCE] = NAME
+    finishedMessage[MSG_TARGET] = MASTER_NAME
+    finishedMessage[MSG_TYPE] = MessageType.FINISHED.value
     finishedMessage[MSG_APPLICATION_NAME] = appName
     finishedMessage[MSG_APPLICATION_VERSION] = appVersion
     
@@ -175,6 +194,8 @@ def buildFinishedMessage(appName, appVersion):
 def buildFailedMessage(appName, appVersion):
     failedMessage = {}
     failedMessage[MSG_SOURCE] = NAME
+    failedMessage[MSG_TARGET] = MASTER_NAME
+    failedMessage[MSG_TYPE] = MessageType.FAILED.value
     failedMessage[MSG_APPLICATION_NAME] = appName
     failedMessage[MSG_APPLICATION_VERSION] = appVersion
     
@@ -197,6 +218,11 @@ class Application(object):
             return True
         return False
     
+    def isOldVersion(self, other):
+        if self.name == other.name and self.version != other.version:
+            return True
+        return False
+    
     def getKey(self):
         return self.name
     
@@ -207,22 +233,33 @@ class Application(object):
         return isProcessRunning(self)
 
 def buildApplicationFromBody(body):
-    return Application(body[MSG_APPLICATION_NAME], body[MSG_APPLICATION_VERSION], body[MSG_APPLICATION_COMMANDS])
+    return Application(body[MSG_APPLICATION_NAME], body[MSG_APPLICATION_VERSION], body[MSG_APPLICATION_COMMAND])
+
+def findApplicationFromBody(body):
+    for app in applications:
+        if app.name == body[MSG_APPLICATION_NAME]:
+            return app
 
 ## ---------------------
 # #     Deployment
 ## ---------------------
 def isAppAlreadyDeployed(app):
     for deployedApp in applications:
-        if(deployedApp.equals(app)):
+        if(deployedApp.isOldVersion(app)):
             return True
     return False
 
+def findApp(app):
+    for deployedApp in applications:
+        if (deployedApp.equals(app)):
+            return deployedApp
+    return None
+
 def deployApplication(app):
     if isAppAlreadyDeployed(app):
-        undeployApplication(app)
+        undeployApplication(findApp(app))
         
-    launchApplication(app)
+    app.pid = launchApplication(app)
     
     global applications
     applications.append(app)

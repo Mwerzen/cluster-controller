@@ -31,6 +31,22 @@ class ClusterTestHelper
 
 		return cc;
 	}
+	
+	public static ClusterController buildClusterControllerLoadBalanced(int numberOfSlaves, int...replicationFactors)
+	{
+		def cc = new ClusterController();
+		cc.deploymentManager = buildDeploymentManager(replicationFactors);
+		cc.slaveManager = buildSlaveManager(numberOfSlaves);
+		
+		cc.slaveManager.slavesInCluster.each {slave -> slave.loadOnSlave = 0}
+
+		if(replicationFactors)
+			cc.deploymentManager.deployments.each {d -> cc.slaveManager.deployToCluster(d)};
+
+		resetRegistry()
+
+		return cc;
+	}
 
 	public static SlaveManager buildSlaveManager(int numberOfSlaves)
 	{

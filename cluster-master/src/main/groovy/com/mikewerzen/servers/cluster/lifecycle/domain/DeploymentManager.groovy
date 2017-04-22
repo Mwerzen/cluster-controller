@@ -47,4 +47,10 @@ public class DeploymentManager
 	{
 		deployments.removeIf { dep ->  removeAllVersions ? deployment.isSameApplication(dep) : deployment.isSameVersionOfApplication(dep)};
 	}
+
+	@Override
+	public String toString()
+	{
+		return "DeploymentManager [deployments=" + deployments + "]";
+	}
 }

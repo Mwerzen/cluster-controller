@@ -54,23 +54,30 @@ class KafkaAdapter implements EventPoller
 		ConsumerRecords<String, Expando> records = consumer.poll(100);
 		for(record in records)
 		{
-			Expando msg = record.value;
-			if (msg.target == MASTER_NAME)
+			try
 			{
-
-				MessageType type = msg.type.toUpperCase();
-				switch (type)
+				Expando msg = record.value;
+				println("Message Read: $msg")
+				if (msg.target == MASTER_NAME)
 				{
-					case MessageType.STATUS:
-						registry.addStatusEvent(msg.source, msg.load);
-						break;
-					case MessageType.FINISHED:
-						registry.addFinishedEvent(msg.source, msg.applicationName, msg.applicationVersion);
-						break;
-					case MessageType.FAILED:
-						registry.addFailedEvent(msg.source, msg.applicationName, msg.applicationVersion);
-						break;
+
+					MessageType type = msg.type.toUpperCase();
+					switch (type)
+					{
+						case MessageType.STATUS:
+							registry.addStatusEvent(msg.source, msg.load);
+							break;
+						case MessageType.FINISHED:
+							registry.addFinishedEvent(msg.source, msg.applicationName, msg.applicationVersion);
+							break;
+						case MessageType.FAILED:
+							registry.addFailedEvent(msg.source, msg.applicationName, msg.applicationVersion);
+							break;
+					}
 				}
+			} catch (Exception e)
+			{
+				println("Exception Occured Processing Messages: $e")
 			}
 		}
 		consumer.commitAsync();

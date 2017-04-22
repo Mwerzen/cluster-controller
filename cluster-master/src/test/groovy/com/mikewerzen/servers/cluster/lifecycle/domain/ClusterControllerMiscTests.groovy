@@ -95,7 +95,7 @@ class ClusterControllerMiscTests
 	@Test
 	public void test_rebalanceCluster_NoAction()
 	{
-		controller = buildClusterController(3, 2);
+		controller = buildClusterControllerLoadBalanced(3, 2);
 
 		assertEquals(2, controller.slaveManager.getNumberOfSlavesRunningSameVersionOfDeployment(controller.findDeployment("App0", null)));
 		assertTrue(controller.findSlave("Slave0").isRunningSameVersionOfDeployment(controller.findDeployment("App0", null)));
@@ -103,6 +103,7 @@ class ClusterControllerMiscTests
 		assertFalse(controller.findSlave("Slave1").isRunningSameVersionOfDeployment(controller.findDeployment("App0", null)));
 
 		controller.rebalanceCluster();
+		println(controller)
 
 		assertEquals(2, controller.slaveManager.getNumberOfSlavesRunningSameVersionOfDeployment(controller.findDeployment("App0", null)));
 		assertTrue(controller.findSlave("Slave0").isRunningSameVersionOfDeployment(controller.findDeployment("App0", null)));
