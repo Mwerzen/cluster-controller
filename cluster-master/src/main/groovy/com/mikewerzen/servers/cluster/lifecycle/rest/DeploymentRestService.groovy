@@ -1,36 +1,48 @@
 package com.mikewerzen.servers.cluster.lifecycle.rest
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
 import com.mikewerzen.servers.cluster.lifecycle.domain.Deployment
 import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
+import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException
 
-@Controller
+@RestController
 @RequestMapping("/")
-class RestController
+class DeploymentRestService
 {
 
 	@Autowired
 	ClusterController controller;
 
 	@RequestMapping(path="/deploy", method = RequestMethod.POST)
-	public ResponseEntity<Boolean> deployApplication(@RequestBody Expando body)
+	public ResponseEntity deployApplication(@RequestBody DeploymentCommand body)
 	{
-		println("Started")
-		Deployment deployment = new Deployment();
-		deployment.applicationName = body.applicationName;
-		deployment.applicationVersion = body.applicationVersion;
-		deployment.deploymentCommands = body.applicationCommand;
-		deployment.replicationFactor = body.replicationFactor;
-
-		controller.deploy(deployment, body.keepOldVersions);
+		try
+		{
+			Deployment deployment = new Deployment();
+			deployment.applicationName = body.applicationName;
+			deployment.applicationVersion = body.applicationVersion;
+			deployment.deploymentCommands = body.applicationCommand;
+			deployment.replicationFactor = body.replicationFactor;
+			controller.deploy(deployment, body.keepOldVersions);
+			return new ResponseEntity(HttpStatus.OK);
+		}
+		catch (ClusterIntegrityException e)
+		{
+			return new ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		catch (Exception x)
+		{
+			return new ResponseEntity(HttpStatus.BAD_REQUEST);
+		}
 
 		return true;
 	}

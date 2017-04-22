@@ -7,9 +7,9 @@ import org.junit.Before
 import org.junit.Test
 
 import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
-import com.mikewerzen.servers.cluster.lifecycle.domain.Deployment
 import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventRegistry
 import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException;
+
 
 public class ClusterControllerDeploymentTests
 {
@@ -29,13 +29,19 @@ public class ClusterControllerDeploymentTests
 
 		Deployment deployment = buildDeployment();
 
-
-		def slavesDeployedTo = controller.deploy(deployment);
-
-		assertEquals(0, registry.getAndClearDeploymentEvents().size());
-		assertEquals(0, controller.getDeploymentManager().deployments.size());
-		assertEquals(0, slavesDeployedTo.size());
-		assertFalse(controller.getSlaveManager().isClusterCurrentlyRunningAnyVersionOfDeployment(deployment));
+		def slavesDeployedTo;
+		try
+		{
+			slavesDeployedTo = controller.deploy(deployment);
+			fail();
+		}
+		catch (ClusterIntegrityException e)
+		{
+			assertEquals(0, registry.getAndClearDeploymentEvents().size());
+			assertEquals(0, controller.getDeploymentManager().deployments.size());
+			assertNull(slavesDeployedTo);
+			assertFalse(controller.getSlaveManager().isClusterCurrentlyRunningAnyVersionOfDeployment(deployment));
+		}
 	}
 
 	@Test

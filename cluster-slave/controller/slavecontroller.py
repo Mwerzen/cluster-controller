@@ -1,16 +1,14 @@
-from kafka import KafkaConsumer, KafkaProducer
-from random import randint
 from enum import Enum
-import socket
 import json
-from time import sleep
-import subprocess
-from subprocess import Popen
 import shlex
-import datetime
-import os.path
-from _datetime import date
-from distutils.command.build import build
+import socket
+import subprocess
+import sys
+import os
+from time import sleep
+
+from kafka import KafkaConsumer, KafkaProducer
+
 
 DEBUG = True
 
@@ -28,20 +26,28 @@ KAFKA_CONSUMER_TIMEOUT = 10000
 KAFKA_SEND_RETRIES = 10
 KAFKA_RETRY_BACKOFF = 20000
 
-STATUS_MSG_SOURCE = 'source'
-STATUS_MSG_LOAD = 'load'
-STATUS_MSG_APPLICATIONS = 'applications'
-STATUS_MSG_TIMESTAMP = 'timestamp'
+MSG_SOURCE = 'source'
+MSG_TARGET = 'target'
+MSG_TYPE = 'type'
+MSG_LOAD = 'load'
+MSG_APPLICATION_NAME = 'applicationName'
+MSG_APPLICATION_VERSION = 'applicationVersion'
+MSG_APPLICATION_COMMANDS = 'deploymentCommands'
 
-COMMAND_MSG_SOURCE = 'source'
-COMMAND_MSG_TARGET = 'target'
-COMMAND_MSG_TYPE = 'commandType'
-COMMAND_MSG_APPLICATION = 'application'
-COMMAND_MSG_TIMESTAMP = 'timestamp'
-
-APPLICATION_NAME = 'name'
-APPLICATION_VERSION = 'version'
-APPLICATION_COMMAND = 'command'
+# STATUS_MSG_SOURCE = 'source'
+# STATUS_MSG_LOAD = 'load'
+# STATUS_MSG_APPLICATIONS = 'applications'
+# STATUS_MSG_TIMESTAMP = 'timestamp'
+# 
+# COMMAND_MSG_SOURCE = 'source'
+# COMMAND_MSG_TARGET = 'target'
+# COMMAND_MSG_TYPE = 'commandType'
+# COMMAND_MSG_APPLICATION = 'application'
+# COMMAND_MSG_TIMESTAMP = 'timestamp'
+# 
+# APPLICATION_NAME = 'name'
+# APPLICATION_VERSION = 'version'
+# APPLICATION_COMMAND = 'command'
 
 TARGET_PROCESS_ROOT_DIR = '/home/pi/'
 
@@ -51,6 +57,10 @@ appsToPids = {}
 ## ---------------------
 # #     Main
 ## ---------------------
+
+
+
+
 def main():
     global NAME 
     NAME = getLastFourOfLocalIP()
@@ -69,21 +79,35 @@ def main():
     # Listen For Deployment Command
     while (True):
         for msg in consumer:
-            body = json.loads(msg.value.decode(KAFKA_JSON_ENCODING))
-            if(COMMAND_MSG_TARGET in body and body[COMMAND_MSG_TARGET] == NAME):
-                debug(body)
-                if (COMMAND_MSG_TYPE in body and body[COMMAND_MSG_TYPE] == SlaveCommand.DEPLOY.value and COMMAND_MSG_APPLICATION in body):
-                    deployApplication(body[COMMAND_MSG_APPLICATION])
-                elif(COMMAND_MSG_TYPE in body and body[COMMAND_MSG_TYPE] == SlaveCommand.UNDEPLOY.value and COMMAND_MSG_APPLICATION in body):
-                    undeployApplication(body[COMMAND_MSG_APPLICATION])
-                elif(COMMAND_MSG_TYPE in body and body[COMMAND_MSG_TYPE] == SlaveCommand.REBOOT.value):
-                    reboot()     
+            handleInboundMessage(msg)
+        monitorApplications(producer)
         producer.send(KAFKA_TOPIC, buildStatusMessage())        
 
     producer.close()
     consumer.close()
 
+def handleInboundMessage(msg):
+    try:
+        body = json.loads(msg.value.decode(KAFKA_JSON_ENCODING))
+        if (MSG_TARGET in body and body[MSG_TARGET] == NAME):
+            debug(body)
+            if (MSG_TYPE in body and body[MSG_TYPE] == MessageType.DEPLOY.value):
+                deployApplication(buildApplicationFromBody(body))
+            elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.UNDEPLOY.value):
+                undeployApplication(buildApplicationFromBody(body))
+            elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.REBOOT.value):
+                reboot()
+            elif (MSG_TYPE in body and body[MSG_TYPE] == MessageType.SHUTDOWN.value):
+                reboot()
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
 
+def monitorApplications(producer):
+    global applications
+    for app in applications:
+        if not app.isRunning():
+            undeployApplication(app)
+            producer.send(KAFKA_TOPIC, buildFailedMessage(app.name, app.version))
 
 ## ---------------------
 # #    Logging
@@ -122,86 +146,139 @@ def getLastFourOfLocalIP():
 ## ---------------------
 # #     Messaging
 ## ---------------------
-class SlaveCommand(Enum):
+class MessageType(Enum):
+    STATUS = "STATUS"
     DEPLOY = "DEPLOY"
     UNDEPLOY = "UNDEPLOY"
+    FINISHED = "FINISHED"
+    FAILED = "FAILED"
     REBOOT = "REBOOT"
-    
-def buildApplication(name, version, command):
-    application = {}
-    application[APPLICATION_NAME] = name
-    application[APPLICATION_VERSION] = version
-    application[APPLICATION_COMMAND] = command
-    return application
+    SHUTDOWN = "SHUTDOWN"
     
 def buildStatusMessage():
-    global applications
     statusMessage = {}
-    statusMessage[STATUS_MSG_SOURCE] = NAME
-    statusMessage[STATUS_MSG_LOAD] = len(applications)
-    statusMessage[STATUS_MSG_TIMESTAMP] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    statusMessage[STATUS_MSG_APPLICATIONS] = applications
+    statusMessage[MSG_SOURCE] = NAME
+    statusMessage[MSG_LOAD] = len(applications)
     
     debug("StatusMessage: " + json.dumps(statusMessage))
     return statusMessage
 
+def buildFinishedMessage(appName, appVersion):
+    finishedMessage = {}
+    finishedMessage[MSG_SOURCE] = NAME
+    finishedMessage[MSG_APPLICATION_NAME] = appName
+    finishedMessage[MSG_APPLICATION_VERSION] = appVersion
+    
+    debug("FinishedMessage: " + json.dumps(finishedMessage))
+    return finishedMessage
+
+def buildFailedMessage(appName, appVersion):
+    failedMessage = {}
+    failedMessage[MSG_SOURCE] = NAME
+    failedMessage[MSG_APPLICATION_NAME] = appName
+    failedMessage[MSG_APPLICATION_VERSION] = appVersion
+    
+    debug("FailedMessage: " + json.dumps(failedMessage))
+    return failedMessage
+
+
+## ---------------------
+# #     Application 
+## ---------------------
+class Application(object):
+    def __init__(self, name, version, command):
+        self.name = name
+        self.version = version
+        self.command = command
+        self.pid = None
+        
+    def equals(self, other):
+        if self.name == other.name:
+            return True
+        return False
+    
+    def getKey(self):
+        return self.name
+    
+    def toString(self):
+        return "" + self.name + ":" + self.version + ":" + self.command + ":" + str(self.pid)
+    
+    def isRunning(self):
+        return isProcessRunning(self)
+
+def buildApplicationFromBody(body):
+    return Application(body[MSG_APPLICATION_NAME], body[MSG_APPLICATION_VERSION], body[MSG_APPLICATION_COMMANDS])
 
 ## ---------------------
 # #     Deployment
 ## ---------------------
-def isAppAlreadyDeployed(appToCheck):
-    for app in applications:
-        if(app[APPLICATION_NAME] == appToCheck[APPLICATION_NAME] and app[APPLICATION_VERSION] == appToCheck[APPLICATION_VERSION]):
+def isAppAlreadyDeployed(app):
+    for deployedApp in applications:
+        if(deployedApp.equals(app)):
             return True
     return False
-
-
-def getKeyForApplication(app):
-    return app[APPLICATION_NAME] + "-" + app[APPLICATION_VERSION]
-
-def setPidForApp(app, pid):
-    global appsToPids
-    appsToPids[getKeyForApplication(app)] = pid
-    
-def getPidForApp(app):
-    global appsToPids
-    pid = appsToPids.get(getKeyForApplication(app), None)
-    setPidForApp(app, None)
-    return pid
 
 def deployApplication(app):
     if isAppAlreadyDeployed(app):
         undeployApplication(app)
-    pid = launchSubprocess(app)
+        
+    launchApplication(app)
+    
     global applications
     applications.append(app)
-    debug("Deployed: " + app[APPLICATION_NAME] + " pid " + str(pid))
+    
+    debug("Deployed: " + app.toString())
 
 def undeployApplication(app):    
     if isAppAlreadyDeployed(app):
-        pid = getPidForApp(app)
-        if pid is not None:
-            killSubprocess(app, pid)
+        if app.pid is not None:
+            killApplication(app)
+            global applications
+            applications.remove(app)
+            debug("Killing: " + app.toString())
+        else:
+            debug("Something is wrong with app's pid: " + app.toString())
     else:
-        debug("Could not undeploy app: " + app[APPLICATION_NAME])
+        debug("Could not undeploy app: " + app.toString())
+
+def launchApplication(app):
+    commands = shlex.split(app.command)
+    return executeProcessForPid(commands)
+
+def killApplication(app):
+    commands = shlex.split("kill -9 " + str(app.pid))
+    return executeProcessForPid(commands)
 
 def reboot():
-    debug("Rebooting")
-    # process = subprocess.Popen("reboot")
+    commands = shlex.split("reboot")
+    return executeProcessForPid(commands)
 
-def launchSubprocess(app):
-    commands = shlex.split("./" + app[APPLICATION_COMMAND])
+def shutdown():
+    commands = shlex.split("shutdown now")
+    return executeProcessForPid(commands)
+    
+    
+## ---------------------
+# #     Unix
+## --------------------- 
+# def executeProcessForPid(commands):
+#     return subprocess.Popen(commands, shell=True).pid;    
+#
+# def isProcessRunning(app):
+#     try:
+#         os.kill(app.pid, 0)
+#         return True
+#     except OSError:
+#         return False
+
+## ---------------------
+# #     Test
+## ---------------------
+def executeProcessForPid(commands):
     debug(commands)
-    process = subprocess.Popen(commands, shell=True)
-    pid = process.pid
-    setPidForApp(app, pid)
-    return pid
+    return 8888
 
-
-def killSubprocess(app, pid):
-    global applications
-    applications.remove(app)
-    debug("Killing: " + app[APPLICATION_NAME] + " pid " + str(pid))
-    subprocess.Popen(["kill", "-9", str(pid)], shell=True)
+def isProcessRunning(app):
+    return True
 
 main()

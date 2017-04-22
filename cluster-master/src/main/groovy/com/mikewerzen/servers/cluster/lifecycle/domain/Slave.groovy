@@ -18,6 +18,7 @@ public class Slave
 
 	public Slave()
 	{
+		lastCheckInMillis = System.currentTimeMillis();
 	}
 
 	public Slave(String slaveName, double loadOnSlave, Deployment...deployments)

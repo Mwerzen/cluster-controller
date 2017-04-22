@@ -1,12 +1,9 @@
 package com.mikewerzen.servers.cluster.lifecycle.domain;
 
+import com.mikewerzen.servers.cluster.lifecycle.domain.event.*;
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-
-import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventPoller
-import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventRegistry
-import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException
 
 @Component
 public class ClusterController
@@ -66,18 +63,13 @@ public class ClusterController
 	public List<Slave> deploy(Deployment deployment, boolean keepOldVersions = false)
 	{
 		def slavesDeployedTo = new ArrayList<Deployment>();
-		try
-		{
-			if(!keepOldVersions)
-				slaveManager.undeployAllVersionsFromCluster(deployment);
 
-			slavesDeployedTo = slaveManager.deployToCluster(deployment);
-			deploymentManager.addDeployment(deployment, keepOldVersions);
-		}
-		catch (ClusterIntegrityException e)
-		{
-			println(e);
-		}
+		if(!keepOldVersions)
+			slaveManager.undeployAllVersionsFromCluster(deployment);
+
+		slavesDeployedTo = slaveManager.deployToCluster(deployment);
+		deploymentManager.addDeployment(deployment, keepOldVersions);
+
 
 		return slavesDeployedTo;
 	}
@@ -100,6 +92,13 @@ public class ClusterController
 		{
 			slave.lastCheckInMillis = System.currentTimeMillis();
 			slave.loadOnSlave = load;
+		}
+		else
+		{
+			slave = new Slave();
+			slave.slaveName = name;
+			slave.loadOnSlave = load;
+			slaveManager.registerSlave(slave);
 		}
 	}
 
