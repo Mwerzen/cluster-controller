@@ -7,7 +7,7 @@ class Test(unittest.TestCase):
 
 
     def testName(self):
-       buildStatusMessage();
+       
        
 
 
