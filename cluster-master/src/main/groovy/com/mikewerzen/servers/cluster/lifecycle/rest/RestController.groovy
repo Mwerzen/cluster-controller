@@ -1,48 +1,68 @@
 package com.mikewerzen.servers.cluster.lifecycle.rest
 
-import javax.management.modelmbean.RequiredModelMBean
-
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 
-import com.mikewerzen.servers.cluster.lifecycle.domain.SlaveManager
+import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
+import com.mikewerzen.servers.cluster.lifecycle.domain.Deployment
+import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
 
 @Controller
 @RequestMapping("/")
-class RestController {
+class RestController
+{
 
-//	@Autowired
-//	SlaveManager manager;
+	@Autowired
+	ClusterController controller;
 
-	@RequestMapping(path="/deploy")
-	public ResponseEntity<Boolean> deployApplication(@RequestParam(value="name") String name, @RequestParam(value="version") String version,
-			@RequestParam(value="command") String command) {
+	@RequestMapping(path="/deploy", method = RequestMethod.POST)
+	public ResponseEntity<Boolean> deployApplication(@RequestBody Expando body)
+	{
+		Deployment deployment = new Deployment();
+		deployment.applicationName = body.applicationName;
+		deployment.applicationVersion = body.applicationVersion;
+		deployment.deploymentCommands = body.applicationCommand;
+		deployment.replicationFactor = body.replicationFactor;
 
-//		Application application = new Application();
-//		application.name = name;
-//		application.version = version;
-//		application.command = command;
-//
-//		manager.deployToSlave(application);
+		controller.deploy(deployment, body.keepOldVersions);
 
-		return null;
+		return true;
 	}
 
-	@RequestMapping(path="/undeploy")
-	public boolean undeployApplication(@RequestParam(value="name") String name, @RequestParam(value="version", required=false) String version) {
+	@RequestMapping(path="/undeploy", method = RequestMethod.DELETE)
+	public boolean undeployApplication(@RequestParam(value="name") String name, @RequestParam(value="version", required=false) String version)
+	{
+		controller.undeploy(controller.findDeployment(name, version), version == null);
 
-//		Application application = new Application();
-//		application.name = name;
-//		application.version = version;
-//
-//		if (version)
-//			manager.undeployThisVersionFromAllSlaves(application);
-//		else
-//			manager.undeployAllVersionsFromAllSlaves(application);
+		return true;
+	}
 
-		return null;
+	@RequestMapping(path="/rebootCluster", method = RequestMethod.PUT)
+	public boolean rebootCluster()
+	{
+		controller.rebootCluster();
+
+		return true;
+	}
+
+	@RequestMapping(path="/terminateCluster", method = RequestMethod.PUT)
+	public boolean terminateCluster()
+	{
+		controller.terminateCluster();
+
+		return true;
+	}
+
+	@RequestMapping(path="/deploymentsToSlaves", method = RequestMethod.GET)
+	public ResponseEntity<Map<Deployment, Slave>> getDeploymentsToSlaves()
+	{
+		ResponseEntity<Map<Deployment, Slave>> res = new ResponseEntity<Map<Deployment, Slave>>();
+		res.body = controller.getDeploymentsToSlaves();
+		return res;
 	}
 }

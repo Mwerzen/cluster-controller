@@ -1,5 +1,8 @@
 package com.mikewerzen.servers.cluster.lifecycle.domain;
 
+import org.springframework.stereotype.Component
+
+@Component
 public class DeploymentManager
 {
 	private Set<Deployment> deployments = new HashSet<Deployment>();

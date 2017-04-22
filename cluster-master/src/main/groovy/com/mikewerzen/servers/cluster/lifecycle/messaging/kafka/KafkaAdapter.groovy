@@ -35,7 +35,7 @@ class KafkaAdapter implements EventPoller
 
 
 		consumer = new KafkaConsumer<String, Expando>(consumerProps);
-		consumer.subscribe(Arrays.asList(KAFKA_STATUS_TOPIC));
+		consumer.subscribe(Arrays.asList(KAFKA_TOPIC));
 
 
 		Properties producerProps = new Properties();

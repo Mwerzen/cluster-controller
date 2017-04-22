@@ -4,8 +4,10 @@ import static org.junit.Assert.*
 
 import com.mikewerzen.servers.cluster.lifecycle.messaging.kafka.KafkaJSONAdapter
 import groovy.json.JsonOutput
+import org.junit.Ignore
 import org.junit.Test
 
+@Ignore
 class TestKafkaJSONAdapter
 {
 

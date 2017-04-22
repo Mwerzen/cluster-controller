@@ -2,7 +2,9 @@ package com.mikewerzen.servers.cluster.lifecycle.domain;
 
 import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException
 import com.sun.javafx.collections.NonIterableChange.GenericAddRemoveChange
+import org.springframework.stereotype.Component
 
+@Component
 public class SlaveManager
 {
 

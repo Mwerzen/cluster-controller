@@ -103,6 +103,18 @@ protected class ClusterController
 		}
 	}
 
+	public void rebootCluster()
+	{
+		Set<Slave> allSlaves = slaveManager.slavesInCluster.clone();
+		allSlaves.each{slave -> slaveManager.rebootSlave(slave)};
+	}
+
+	public void terminateCluster()
+	{
+		Set<Slave> allSlaves = slaveManager.slavesInCluster.clone();
+		allSlaves.each{slave -> slaveManager.shutdownSlave(slave)};
+	}
+
 	protected void rebalanceCluster()
 	{
 		slaveManager.shutdownDeadSlaves();
