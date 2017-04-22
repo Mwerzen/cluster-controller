@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
+import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventPoller
+import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventRegistry
 import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException
 
 @Component
@@ -16,15 +18,21 @@ protected class ClusterController
 	@Autowired
 	SlaveManager slaveManager;
 
+	@Autowired
+	EventPoller eventPoller;
+
+	EventRegistry registry = EventRegistry.getInstance();
 
 
 	@Scheduled(fixedDelay=10000L)
 	public void executeStep()
 	{
-		
-		
-		
-		
+		eventPoller.pollInboundEvents();
+		registry.getAndClearStatusEvents().each {event -> refreshSlave(event.name, event.load) };
+		registry.getAndClearFailedEvents().each {event -> handleFailedDeployment(findDeployment(event.app, event.version), findSlave(event.name))};
+		registry.getAndClearFinishedEvents();
+		rebalanceCluster();
+		eventPoller.pollOutboundEvents();
 	}
 
 
@@ -33,14 +41,14 @@ protected class ClusterController
 		return slaveManager.findSlaveForName(name);
 	}
 
-	protected Map<Deployment, List<Slave>> getDeploymentsToSlaves()
+	public Map<Deployment, List<Slave>> getDeploymentsToSlaves()
 	{
 		Map<Deployment, List<Slave>> depsToSlaves = new HashMap<Deployment, List<Slave>>();
 		deploymentManager.deployments.each {deployment -> depsToSlaves.put(deployment, slaveManager.slavesInCluster.findAll { slave -> slave.isRunningSameVersionOfDeployment(deployment)})};
 		return depsToSlaves;
 	}
 
-	protected Map<Slave, List<Deployment>> getSlavesToDeployments()
+	public Map<Slave, List<Deployment>> getSlavesToDeployments()
 	{
 		Map<Slave, List<Deployment>> slavesToDeps = new HashMap<Deployment, List<Slave>>();
 		slaveManager.slavesInCluster.each {slave -> slavesToDeps.put(slave, slave.deploymentsRunning)};
@@ -55,7 +63,7 @@ protected class ClusterController
 		return deploymentManager.findDeployment(name);
 	}
 
-	protected List<Slave> deploy(Deployment deployment, boolean keepOldVersions = false)
+	public List<Slave> deploy(Deployment deployment, boolean keepOldVersions = false)
 	{
 		def slavesDeployedTo = new ArrayList<Deployment>();
 		try
@@ -79,7 +87,7 @@ protected class ClusterController
 		return slaveManager.reassignDeploymentToNewSlave(deployment, slave);
 	}
 
-	protected void undeploy(Deployment deployment, boolean allVersions)
+	public void undeploy(Deployment deployment, boolean allVersions)
 	{
 		slaveManager.undeployFromCluster(deployment, allVersions);
 		deploymentManager.removeDeployment(deployment, allVersions);
