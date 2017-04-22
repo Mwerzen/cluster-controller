@@ -9,7 +9,7 @@ import com.mikewerzen.servers.cluster.lifecycle.domain.event.EventRegistry
 import com.mikewerzen.servers.cluster.lifecycle.domain.exception.ClusterIntegrityException
 
 @Component
-protected class ClusterController
+public class ClusterController
 {
 
 	@Autowired

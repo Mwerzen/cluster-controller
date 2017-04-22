@@ -23,6 +23,7 @@ class RestController
 	@RequestMapping(path="/deploy", method = RequestMethod.POST)
 	public ResponseEntity<Boolean> deployApplication(@RequestBody Expando body)
 	{
+		println("Started")
 		Deployment deployment = new Deployment();
 		deployment.applicationName = body.applicationName;
 		deployment.applicationVersion = body.applicationVersion;
