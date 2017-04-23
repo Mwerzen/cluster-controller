@@ -19,7 +19,7 @@ NAME = ""
 MASTER_NAME = "master"
 
 KAFKA_HOST = '192.168.1.50:9092'
-KAFKA_TOPIC = "test"
+KAFKA_TOPIC = "clustercontrol"
 KAFKA_JSON_ENCODING = 'utf-8'
 KAFKA_CLIENT_ID = NAME
 KAFKA_GROUP_ID = NAME
@@ -279,7 +279,7 @@ def launchApplication(app):
     return executeProcessForPid(commands)
 
 def killApplication(app):
-    commands = "kill -9 " + str(app.pid)
+    commands = "pkill -f " + app.name
     return executeProcessForPid(commands)
 
 def reboot():

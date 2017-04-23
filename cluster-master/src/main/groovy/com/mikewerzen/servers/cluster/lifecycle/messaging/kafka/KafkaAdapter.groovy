@@ -18,7 +18,7 @@ class KafkaAdapter implements EventPoller
 
 	public static final String KAFKA_IP = "192.168.1.50:9092"
 
-	public static final String KAFKA_TOPIC = "test";
+	public static final String KAFKA_TOPIC = "clustercontrol";
 
 	EventRegistry registry = EventRegistry.getInstance();
 
