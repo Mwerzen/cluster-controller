@@ -23,7 +23,7 @@ class DeploymentRestService
 	@Autowired
 	ClusterController controller;
 	
-	Gson gson = new GsonBuilder().disableHtmlEscaping().enableComplexMapKeySerialization().setPrettyPrinting().create();
+	Gson gson = new GsonBuilder().disableHtmlEscaping().enableComplexMapKeySerialization().create();
 
 	@RequestMapping(path="/deploy", method = RequestMethod.POST)
 	public ResponseEntity deployApplication(@RequestBody DeploymentCommand body)
