@@ -4,10 +4,10 @@ import sys
 
 def main():
     command = {}
-    command['applicationName'] = "PewPew"
-    command['applicationVersion'] = "8.0"
-    command['applicationCommand'] = "./java -jar danker"
-    command['replicationFactor'] = 3
+    command['applicationName'] = "SleepAll"
+    command['applicationVersion'] = "3.0"
+    command['applicationCommand'] = "python sleepandprint.py"
+    command['replicationFactor'] = 1
     command['keepOldVersions'] = False;
 
     resp = requests.post('http://localhost:8080/deploy', json=command)

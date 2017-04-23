@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.mikewerzen.servers.cluster.lifecycle.domain.ClusterController
 import com.mikewerzen.servers.cluster.lifecycle.domain.Deployment
 import com.mikewerzen.servers.cluster.lifecycle.domain.Slave
@@ -21,6 +22,8 @@ class DeploymentRestService
 
 	@Autowired
 	ClusterController controller;
+	
+	Gson gson = new GsonBuilder().disableHtmlEscaping().enableComplexMapKeySerialization().setPrettyPrinting().create();
 
 	@RequestMapping(path="/deploy", method = RequestMethod.POST)
 	public ResponseEntity deployApplication(@RequestBody DeploymentCommand body)
@@ -48,34 +51,88 @@ class DeploymentRestService
 	}
 
 	@RequestMapping(path="/undeploy", method = RequestMethod.DELETE)
-	public boolean undeployApplication(@RequestParam(value="name") String name, @RequestParam(value="version", required=false) String version)
+	public ResponseEntity undeployApplication(@RequestParam(value="name") String name, @RequestParam(value="version", required=false) String version)
 	{
-		controller.undeploy(controller.findDeployment(name, version), version == null);
-
-		return true;
+		try
+		{
+			controller.undeploy(controller.findDeployment(name, version), version == null);
+			return new ResponseEntity(HttpStatus.OK);
+		}
+		catch (Exception e)
+		{
+			return new ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE);
+		}
 	}
 
-	@RequestMapping(path="/rebootCluster", method = RequestMethod.PUT)
-	public boolean rebootCluster()
+	@RequestMapping(path="/rebootCluster", method = RequestMethod.DELETE)
+	public ResponseEntity rebootCluster()
 	{
-		controller.rebootCluster();
-
-		return true;
+		try
+		{
+			controller.rebootCluster();
+			return new ResponseEntity(HttpStatus.OK);
+		}
+		catch (Exception e)
+		{
+			return new ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE);
+		}
 	}
 
-	@RequestMapping(path="/terminateCluster", method = RequestMethod.PUT)
-	public boolean terminateCluster()
+	@RequestMapping(path="/terminateCluster", method = RequestMethod.DELETE)
+	public ResponseEntity terminateCluster()
 	{
-		controller.terminateCluster();
-
-		return true;
+		try
+		{
+			controller.terminateCluster();
+			return new ResponseEntity(HttpStatus.OK);
+		}
+		catch (Exception e)
+		{
+			return new ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE);
+		}
 	}
 
 	@RequestMapping(path="/deploymentsToSlaves", method = RequestMethod.GET)
-	public ResponseEntity<Map<Deployment, Slave>> getDeploymentsToSlaves()
+	public ResponseEntity getDeploymentsToSlaves()
 	{
-		ResponseEntity<Map<Deployment, Slave>> res = new ResponseEntity<Map<Deployment, Slave>>();
-		res.body = controller.getDeploymentsToSlaves();
-		return res;
+		try
+		{
+			Map depToSlaves = controller.getDeploymentsToSlaves();
+			String body = gson.toJson(depToSlaves);
+			return new ResponseEntity(body, HttpStatus.OK);
+		}
+		catch (Exception e)
+		{
+			return new ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE);
+		}
+	}
+
+	@RequestMapping(path="/slavesToDeployments", method = RequestMethod.GET)
+	public ResponseEntity getSlavesToDeployments()
+	{
+		try
+		{
+			Map slavesToDep = controller.getSlavesToDeployments();
+			String body = gson.toJson(slavesToDep);
+			return new ResponseEntity(body, HttpStatus.OK);
+		}
+		catch (Exception e)
+		{
+			return new ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE);
+		}
+	}
+	
+	@RequestMapping(path="/clusterInfo", method = RequestMethod.GET)
+	public ResponseEntity getClusterInfo()
+	{
+		try
+		{
+			String body = gson.toJson(controller);
+			return new ResponseEntity(body, HttpStatus.OK);
+		}
+		catch (Exception e)
+		{
+			return new ResponseEntity(HttpStatus.SERVICE_UNAVAILABLE);
+		}
 	}
 }

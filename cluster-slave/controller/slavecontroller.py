@@ -55,7 +55,7 @@ TARGET_PROCESS_ROOT_DIR = '/home/pi/'
 applications = []
 appsToPids = {}
 
-shouldContiue = True
+shouldContinue = True
 isNotFirstRun = False;
 ## ---------------------
 # #     Main
@@ -75,25 +75,23 @@ def main():
     consumer = KafkaConsumer(KAFKA_TOPIC, bootstrap_servers=KAFKA_HOST, client_id=KAFKA_CLIENT_ID, group_id=KAFKA_GROUP_ID, consumer_timeout_ms=KAFKA_CONSUMER_TIMEOUT)
     producer = KafkaProducer(bootstrap_servers=KAFKA_HOST, value_serializer=lambda v: json.dumps(v).encode(KAFKA_JSON_ENCODING), retries=KAFKA_SEND_RETRIES, retry_backoff_ms=KAFKA_RETRY_BACKOFF)
     
-    # Produce Awake Message
-    producer.send(KAFKA_TOPIC, buildStatusMessage())
-    print("Sent First Message to Topic: " + KAFKA_TOPIC)
-    
     # Listen For Deployment Command
     global isNotFirstRun
-    global shouldContiue
+    global shouldContinue
     
-    while (shouldContiue):
+    while (shouldContinue):
         for msg in consumer:
-            if(shouldContiue):
-                shouldContiue = handleInboundMessage(msg)
+            if(shouldContinue and isNotFirstRun):
+                shouldContinue = handleInboundMessage(msg)
         monitorApplications(producer)
-        producer.send(KAFKA_TOPIC, buildStatusMessage())
-        debug(applications)   
+        producer.send(KAFKA_TOPIC, buildStatusMessage()) 
         isNotFirstRun = True    
 
-    producer.close()
-    consumer.close()
+    try:
+        producer.close()
+        consumer.close()
+    except:
+        print("Error shutting down clients")
     
     reboot()
 
@@ -120,6 +118,7 @@ def handleInboundMessage(msg):
 def monitorApplications(producer):
     global applications
     for app in applications:
+        print("Running App: " + app.toString())
         if not app.isRunning():
             undeployApplication(app)
             producer.send(KAFKA_TOPIC, buildFailedMessage(app.name, app.version))
@@ -243,7 +242,7 @@ def findApplicationFromBody(body):
 ## ---------------------
 # #     Deployment
 ## ---------------------
-def isAppAlreadyDeployed(app):
+def isOlderVersionOfAppDeployed(app):
     for deployedApp in applications:
         if(deployedApp.isOldVersion(app)):
             return True
@@ -256,7 +255,7 @@ def findApp(app):
     return None
 
 def deployApplication(app):
-    if isAppAlreadyDeployed(app):
+    if isOlderVersionOfAppDeployed(app):
         undeployApplication(findApp(app))
         
     app.pid = launchApplication(app)
@@ -267,55 +266,52 @@ def deployApplication(app):
     debug("Deployed: " + app.toString())
 
 def undeployApplication(app):    
-    if isAppAlreadyDeployed(app):
-        if app.pid is not None:
-            killApplication(app)
-            global applications
-            applications.remove(app)
-            debug("Killing: " + app.toString())
-        else:
-            debug("Something is wrong with app's pid: " + app.toString())
+    if app.pid is not None:
+        killApplication(app)
+        global applications
+        applications.remove(app)
+        debug("Killing: " + app.toString())
     else:
-        debug("Could not undeploy app: " + app.toString())
+        debug("Something is wrong with app's pid: " + app.toString())
 
 def launchApplication(app):
-    commands = shlex.split(app.command)
+    commands = app.command
     return executeProcessForPid(commands)
 
 def killApplication(app):
-    commands = shlex.split("kill -9 " + str(app.pid))
+    commands = "kill -9 " + str(app.pid)
     return executeProcessForPid(commands)
 
 def reboot():
-    commands = shlex.split("reboot")
+    commands = "reboot"
     return executeProcessForPid(commands)
 
 def shutdown():
-    commands = shlex.split("shutdown now")
+    commands = "shutdown now"
     return executeProcessForPid(commands)
     
     
-## ---------------------
+# ---------------------
 # #     Unix
-## --------------------- 
-# def executeProcessForPid(commands):
-#     return subprocess.Popen(commands, shell=True).pid;    
-#
-# def isProcessRunning(app):
-#     try:
-#         os.kill(app.pid, 0)
-#         return True
-#     except OSError:
-#         return False
-
-## ---------------------
-# #     Test
-## ---------------------
+# --------------------- 
 def executeProcessForPid(commands):
-    debug(commands)
-    return 8888
+    return subprocess.Popen("exec " + commands, shell=True).pid;    
 
 def isProcessRunning(app):
-    return True
+    try:
+        os.kill(app.pid, 0)
+        return True
+    except OSError:
+        return False
+
+# ## ---------------------
+# # #     Test
+# ## ---------------------
+# def executeProcessForPid(commands):
+#     debug(commands)
+#     return 8888
+# 
+# def isProcessRunning(app):
+#     return True
 
 main()
